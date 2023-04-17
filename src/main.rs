@@ -1,5 +1,6 @@
 mod calc;
+use calc::Calc;
 
 fn main() {
-    println!("main");
+    Calc::test();
 }
