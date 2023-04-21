@@ -1,3 +1,5 @@
+use rand::Rng;
+use std::time::{Duration, Instant};
 use std::f32::consts::PI;
 
 pub struct Point {
@@ -38,7 +40,7 @@ impl Calc {
         return (Calc::format_angles(theta_one), Calc::format_angles(theta_two));
     }
 
-    pub fn format_angles(angle: f32) -> f32 {
+    fn format_angles(angle: f32) -> f32 {
         if angle > PI {
             return angle-(2.0*PI);
         }
@@ -60,6 +62,42 @@ impl Calc {
 
         return Point{ x, y }
      }
+
+    pub fn random_test() {
+        let mut rng = rand::thread_rng();
+        let origin = Point {
+            x: 0.0,
+            y: 0.0
+        };
+
+        let calc = Calc {
+            origin,
+            radius: 1.0
+        };
+
+        let mut counter = 0;
+        
+        let start = Instant::now();
+
+        for _ in 0..1000000 {
+            let angle = rng.gen_range(-PI/2.0..PI/2.0);
+            let r = rng.gen_range(0.1..2.0);
+
+            let point = Point {
+                x: f32::cos(angle)*r,
+                y: f32::sin(angle)*r
+            };
+            
+            let _ = calc.get_angles(&point);
+
+            counter += 1;
+        }
+
+        let duration = start.elapsed();
+
+        println!("Runs: {}", counter);
+        println!("Time: {:?}", duration);
+    }
 
     pub fn test() {
         let origin = Point {
