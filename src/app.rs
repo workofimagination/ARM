@@ -36,7 +36,6 @@ pub struct Point {
 
 pub struct App {
     prev_positions: GonetoPosition<Point>,
-    handler: Handler
 }
 
 impl App {
