@@ -1,3 +1,5 @@
+use crate::handler::Handler;
+
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -33,11 +35,12 @@ pub struct Point {
 }
 
 pub struct App {
-    prev_positions: GonetoPosition<Point>
+    prev_positions: GonetoPosition<Point>,
+    handler: Handler
 }
 
 impl App {
-    pub fn init() -> App {
+    pub fn make() -> App {
         let positions: Vec<Point> = Vec::new();
 
         let prev_positions: GonetoPosition<Point> = GonetoPosition {
@@ -50,7 +53,7 @@ impl App {
     }
 
     pub fn start(&mut self) {
-        enable_raw_mode().expect("can run in raw mode");
+        enable_raw_mode().expect("cannot run in raw mode");
 
         let (tx, rx) = mpsc::channel();
         let tick_rate = Duration::from_millis(200);
@@ -63,8 +66,8 @@ impl App {
                         .unwrap_or_else(|| Duration::from_secs(0));
     
                 if event::poll(timeout).expect("poll works") {
-                    if let event::Event::Key(key) = event::read().expect("event reading works") {
-                        tx.send(Event::Input(key)).expect("can send events");
+                    if let event::Event::Key(key) = event::read().expect("event reading does not works") {
+                        tx.send(Event::Input(key)).expect("cannot send events");
                     }
                 }
 

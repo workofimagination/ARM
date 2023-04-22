@@ -6,7 +6,4 @@ use app::App;
 use handler::Handler;
 
 fn main() {
-    let mut handler = Handler::init();
-
-    handler.start();
 }
