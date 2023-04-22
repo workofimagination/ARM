@@ -1,4 +1,3 @@
-use crate::handler::Handler;
 
 use std::sync::mpsc;
 use std::thread;
@@ -22,6 +21,11 @@ enum Event<I> {
     Tick
 }
 
+enum Mode {
+    Normal,
+    Safe
+}
+
 struct GonetoPosition<T> {
     state: ListState,
     items: Vec<T>
@@ -36,6 +40,7 @@ pub struct Point {
 
 pub struct App {
     prev_positions: GonetoPosition<Point>,
+    current_mode: Mode
 }
 
 impl App {
@@ -47,7 +52,9 @@ impl App {
             items: positions
         };
 
-        return App { prev_positions }
+        let current_mode = Mode::Normal;
+
+        return App { prev_positions, current_mode }
 
     }
 
@@ -110,6 +117,18 @@ impl App {
                     )
                     .split(chunks[1]);
 
+                let bottom_chunks = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .margin(0)
+                    .constraints(
+                        [
+                            Constraint::Percentage(20),
+                            Constraint::Percentage(80)
+                        ]
+                        .as_ref()
+                    )
+                    .split(chunks[2]);
+
                 let copyright = Paragraph::new("this is a test")
                     .style(Style::default())
                     .alignment(tui::layout::Alignment::Center)
@@ -117,10 +136,9 @@ impl App {
                         Block::default()
                             .borders(Borders::ALL)
                             .style(Style::default())
-                            .title("testbox")
                             .border_type(tui::widgets::BorderType::Plain)
                     );
-                rect.render_widget(copyright, chunks[2]);
+                rect.render_widget(copyright, bottom_chunks[1]);
 
 
                 let canvas = Canvas::default()
@@ -160,6 +178,19 @@ impl App {
 
                 rect.render_stateful_widget(items, middle_chunks[0], &mut self.prev_positions.state);
 
+                let current_mode_string = self.get_current_mode_string();
+
+                let current_mode_box = Paragraph::new(current_mode_string)
+                    .style(Style::default())
+                    .alignment(tui::layout::Alignment::Center)
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .style(Style::default())
+                            .border_type(tui::widgets::BorderType::Plain)
+                    );
+                rect.render_widget(current_mode_box, bottom_chunks[0]);
+
                 self.add_random_point();
 
             }).unwrap();
@@ -169,12 +200,29 @@ impl App {
 
             match rx.recv().unwrap() {
                 Event::Input(event) => match event.code {
-                    KeyCode::Char('q') => {
-                        disable_raw_mode().unwrap();
-                        terminal.show_cursor().unwrap();
-                        break;
-                    },
-                    _ => {}
+                    event => match self.current_mode {
+                        Mode::Normal => match event {
+                            KeyCode::Esc => {
+                                self.current_mode = Mode::Safe 
+                            },
+
+                            KeyCode::Char('q') => {
+                                disable_raw_mode().unwrap();
+                                terminal.show_cursor().unwrap();
+                                break;
+                            },
+
+                            _ => {}
+                        },
+
+                        Mode::Safe => match event {
+                            KeyCode::Esc => {
+                                self.current_mode = Mode::Normal 
+                            },
+
+                            _ => {}
+                        }
+                    }
                 },
                 Event::Tick => {}
             }
@@ -197,5 +245,14 @@ impl App {
         let rand = App::gen_random_point();
         self.prev_positions.items.push(rand);
     }
+
+    fn get_current_mode_string(&self) -> &str {
+        let string = match self.current_mode {
+            Mode::Normal => { "Normal" },
+            Mode::Safe => { "Safe" }
+        };
+
+        return string
+    } 
 
 }
