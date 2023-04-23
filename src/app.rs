@@ -1,4 +1,6 @@
+use crate::utils::ShiftingVec;
 
+use std::num::ParseFloatError;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -7,13 +9,12 @@ use rand::Rng;
 
 use crossterm::event::{self, KeyCode};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use tui::Terminal;
+use tui::{Terminal, symbols};
 use tui::backend::CrosstermBackend;
 use tui::layout::{Layout, Direction, Constraint};
 use tui::style::Style;
 use tui::text::{Span, Spans};
-use tui::widgets::canvas::Canvas;
-use tui::widgets::{Paragraph, Block, Borders, ListState, ListItem, List};
+use tui::widgets::{Paragraph, Block, Borders, ListState, ListItem, List, Dataset, Chart, Axis, GraphType};
 
 
 enum Event<I> {
@@ -23,12 +24,9 @@ enum Event<I> {
 
 enum Mode {
     Normal,
-    Safe
-}
-
-struct GonetoPosition<T> {
-    state: ListState,
-    items: Vec<T>
+    Safe,
+    Control,
+    Buffer
 }
 
 pub struct Point {
@@ -39,22 +37,23 @@ pub struct Point {
 }
 
 pub struct App {
-    prev_positions: GonetoPosition<Point>,
-    current_mode: Mode
+    prev_positions: ShiftingVec<Point>,
+    command_output: ShiftingVec<String>,
+    current_mode: Mode,
+    buffer: String
 }
 
 impl App {
     pub fn make() -> App {
-        let positions: Vec<Point> = Vec::new();
+        let prev_positions = ShiftingVec::<Point>::initalize(12);
 
-        let prev_positions: GonetoPosition<Point> = GonetoPosition {
-            state: ListState::default(),
-            items: positions
-        };
+        let command_output = ShiftingVec::<String>::initalize(12);
 
-        let current_mode = Mode::Normal;
+        let current_mode = Mode::Safe;
 
-        return App { prev_positions, current_mode }
+        let buffer = "".to_string();
+
+        return App { prev_positions, command_output, current_mode, buffer}
 
     }
 
@@ -104,6 +103,20 @@ impl App {
                         ].as_ref()
                     )
                     .split(size);
+                
+                let top_chunks = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .margin(0)
+                    .constraints(
+                        [
+                            Constraint::Percentage(25),
+                            Constraint::Percentage(25),
+                            Constraint::Percentage(25),
+                            Constraint::Percentage(25)
+                        ]
+                        .as_ref()
+                    )
+                    .split(chunks[0]);
 
                 let middle_chunks = Layout::default()
                     .direction(Direction::Horizontal)
@@ -117,6 +130,18 @@ impl App {
                     )
                     .split(chunks[1]);
 
+                let middle_left_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .margin(0)
+                    .constraints(
+                        [
+                            Constraint::Percentage(50),
+                            Constraint::Percentage(50)
+                        ]
+                        .as_ref()
+                    )
+                    .split(middle_chunks[0]);
+
                 let bottom_chunks = Layout::default()
                     .direction(Direction::Horizontal)
                     .margin(0)
@@ -129,7 +154,23 @@ impl App {
                     )
                     .split(chunks[2]);
 
-                let copyright = Paragraph::new("this is a test")
+                let current_x = self.make_plain_paragraph(format!("Current X: {}", self.get_current_x()));
+
+                rect.render_widget(current_x, top_chunks[0]);
+
+                let current_y = self.make_plain_paragraph(format!("Current Y: {}", self.get_current_y()));
+
+                rect.render_widget(current_y, top_chunks[1]);
+
+                let current_column = self.make_plain_paragraph(format!("Column Angle: {}", self.get_current_column_angle()));
+
+                rect.render_widget(current_column, top_chunks[2]);
+
+                let current_beam = self.make_plain_paragraph(format!("Beam Angle: {}", self.get_current_beam_angle()));
+
+                rect.render_widget(current_beam, top_chunks[3]);
+
+                let buffer = Paragraph::new(self.buffer.clone())
                     .style(Style::default())
                     .alignment(tui::layout::Alignment::Center)
                     .block(
@@ -138,25 +179,28 @@ impl App {
                             .style(Style::default())
                             .border_type(tui::widgets::BorderType::Plain)
                     );
-                rect.render_widget(copyright, bottom_chunks[1]);
+                rect.render_widget(buffer, bottom_chunks[1]);
 
-
-                let canvas = Canvas::default()
+                let dataset = self.get_datasets();
+                
+                let map = Chart::new(dataset)
                     .block(
                         Block::default()
-                            .borders(Borders::ALL)
-                            .title("map")
+                        .title("map")
+                        .borders(Borders::ALL)
                     )
-                    .paint(|_ctx| {
-                        
-                    })
-                    .x_bounds([0.0, 100.0])
-                    .y_bounds([0.0, 100.0]);
-                    
+                    .x_axis(
+                        Axis::default()
+                        .bounds([0.0, 2.0])
+                    )
+                    .y_axis(
+                        Axis::default()
+                        .bounds([-1.0, 1.0])
+                    );
+                
+                rect.render_widget(map, middle_chunks[1]);
 
-                rect.render_widget(canvas, middle_chunks[1]);
-
-                let items: Vec<ListItem> = self.prev_positions.items
+                let items: Vec<ListItem> = self.prev_positions.get_items()
                     .iter()
                     .map(|i| {
                         let content = Spans::from(Span::styled(
@@ -168,19 +212,37 @@ impl App {
                     })
                     .collect();
 
-                let items = List::new(items)
+                let prev_items = List::new(items)
                     .block(
                         Block::default()
                         .borders(Borders::ALL)
                         .title("Previous Positions")
-                    )
-                    .highlight_symbol(">> ");
+                    );
 
-                rect.render_stateful_widget(items, middle_chunks[0], &mut self.prev_positions.state);
+                rect.render_stateful_widget(prev_items, middle_left_chunks[0], &mut self.prev_positions.get_state());
 
-                let current_mode_string = self.get_current_mode_string();
+                let command_items: Vec<ListItem> = self.command_output.get_items()
+                    .iter()
+                    .map(|i| {
+                        let content = Spans::from(Span::styled(
+                            format!("{}", i),
+                            Style::default() 
+                        ));
 
-                let current_mode_box = Paragraph::new(current_mode_string)
+                        ListItem::new(content).style(Style::default())
+                    })
+                    .collect();
+
+                let command_items = List::new(command_items)
+                    .block(
+                        Block::default()
+                            .title("Command Output")
+                            .borders(Borders::ALL)
+                    );
+
+                rect.render_stateful_widget(command_items, middle_left_chunks[1], &mut self.command_output.get_state());
+
+                let current_mode_box = Paragraph::new(self.get_current_mode_string())
                     .style(Style::default())
                     .alignment(tui::layout::Alignment::Center)
                     .block(
@@ -190,11 +252,7 @@ impl App {
                             .border_type(tui::widgets::BorderType::Plain)
                     );
                 rect.render_widget(current_mode_box, bottom_chunks[0]);
-
-                self.add_random_point();
-
             }).unwrap();
-
 
             // END OF PAGE RENDERING, MOVE THIS SHIT INTO A FUNCTION LATER
 
@@ -212,13 +270,66 @@ impl App {
                                 break;
                             },
 
+                            KeyCode::Char('a') => {
+                                self.add_random_point();
+                            }
+
                             _ => {}
                         },
 
                         Mode::Safe => match event {
-                            KeyCode::Esc => {
+                            KeyCode::Char('q') => {
+                                disable_raw_mode().unwrap();
+                                terminal.show_cursor().unwrap();
+                                break;
+                            },
+
+                            KeyCode::Char('n') => {
                                 self.current_mode = Mode::Normal 
                             },
+
+                            KeyCode::Char('c') => {
+                                self.current_mode = Mode::Control
+                            }
+
+                            KeyCode::Char(':') => {
+                                self.current_mode = Mode::Buffer
+                            }
+
+                            _ => {}
+                        },
+
+                        Mode::Control => match event {
+                            KeyCode::Esc => {
+                                self.current_mode = Mode::Safe
+                            },
+
+                            KeyCode::Enter => {
+                                self.goto()
+                            }
+                            _ => {}
+                        },
+
+                        Mode::Buffer => match event {
+                            KeyCode::Esc => {
+                                self.current_mode = Mode::Safe
+                            },
+
+                            KeyCode::Enter => {
+                                self.current_mode = Mode::Safe
+                            }
+
+                            KeyCode::Char(c) => {
+                                self.buffer.push(c);
+                            },
+
+                            KeyCode::Backspace => {
+                                self.buffer.pop();
+                            },
+
+                            KeyCode::Delete => {
+                                self.buffer.clear();
+                            }
 
                             _ => {}
                         }
@@ -227,11 +338,9 @@ impl App {
                 Event::Tick => {}
             }
         }
-
-
     }
 
-    pub fn gen_random_point() -> Point {
+    fn gen_random_point() -> Point {
         let mut rng = rand::thread_rng();
         let x = rng.gen_range(1.0..3.0);
         let y = rng.gen_range(1.0..3.0);
@@ -241,18 +350,86 @@ impl App {
         return Point { x, y, column_angle, beam_angle }
     }
 
-    pub fn add_random_point(&mut self) {
+    fn add_random_point(&mut self) {
         let rand = App::gen_random_point();
-        self.prev_positions.items.push(rand);
+        self.prev_positions.insert(rand);
+    }
+
+    fn goto(&mut self) {
+        let points = match self.parse_buffer_goto() {
+            Ok(x) => x,
+            Err(e) => {
+                self.command_output.insert(format!("{}", e));
+                return
+            }
+        };
+
+        self.command_output.insert(format!("going to new point"));
+    }
+
+    fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {
+        let coords = self.buffer.split("-").collect::<Vec<&str>>();
+
+        let x = match coords[0].parse::<f32>() {
+            Ok(x) => x,
+            Err(e) => return Err(e)
+        };
+
+        let y = match coords[1].parse::<f32>() {
+            Ok(y) => y,
+            Err(e) => return Err(e)
+        };
+
+        Ok((x, y))
     }
 
     fn get_current_mode_string(&self) -> &str {
         let string = match self.current_mode {
             Mode::Normal => { "Normal" },
-            Mode::Safe => { "Safe" }
+            Mode::Safe => { "Safe" },
+            Mode::Control => { "Control" },
+            Mode::Buffer => { "Buffer" }
         };
 
         return string
     } 
 
+    fn get_current_x(&self) -> f32 {
+        return 0.0
+    }
+
+    fn get_current_y(&self) -> f32 {
+        return 0.0
+    }
+
+    fn get_current_column_angle(&self) -> f32 {
+        return 0.0
+    }
+
+    fn get_current_beam_angle(&self) -> f32 {
+        return 0.0
+    }
+
+    fn make_plain_paragraph(&self, content: String) -> Paragraph {
+        let paragraph = Paragraph::new(content)
+            .style(Style::default())
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(Style::default())
+            );
+
+        return paragraph
+    }
+
+    fn get_datasets(&self) -> Vec<Dataset> {
+        let datasets = vec![
+            Dataset::default()
+                .marker(symbols::Marker::Braille)
+                .graph_type(GraphType::Line)
+                .data(&[(0.0, 0.0), (0.87, 0.47), (0.38, -0.39)])
+        ];
+
+        return datasets
+    }
 }

@@ -1,0 +1,12 @@
+needs
+    start, stop and pause gcode
+    move to position (x, y) for now
+    import gcode
+    save position at the end of gcode file / on shutdown
+    zero button
+
+option
+    params / settings (ie speed) for robot
+    real time status of robot position as it moves
+        or list of positions ran to
+
