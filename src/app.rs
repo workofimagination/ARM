@@ -1,4 +1,4 @@
-use crate::utils::ShiftingVec;
+use crate::utils::{ShiftingVec, Utils};
 
 use std::num::ParseFloatError;
 use std::sync::mpsc;
@@ -23,7 +23,7 @@ enum Event<I> {
 }
 
 enum Mode {
-    Normal,
+    Debug,
     Safe,
     Control,
     Buffer
@@ -34,6 +34,12 @@ pub struct Point {
     y: f32,
     column_angle: f32,
     beam_angle: f32
+}
+
+pub struct AngleSet {
+    column_angle: f32,
+    beam_angle: f32,
+    rotation_angle: f32
 }
 
 pub struct App {
@@ -124,7 +130,7 @@ impl App {
                     .constraints(
                         [
                             Constraint::Percentage(30),
-                            Constraint::Percentage(70)
+                            Constraint::Percentage(70),
                         ]
                         .as_ref()
                     )
@@ -195,7 +201,7 @@ impl App {
                     )
                     .y_axis(
                         Axis::default()
-                        .bounds([-1.0, 1.0])
+                        .bounds([0.0, 1.0])
                     );
                 
                 rect.render_widget(map, middle_chunks[1]);
@@ -259,7 +265,7 @@ impl App {
             match rx.recv().unwrap() {
                 Event::Input(event) => match event.code {
                     event => match self.current_mode {
-                        Mode::Normal => match event {
+                        Mode::Debug => match event {
                             KeyCode::Esc => {
                                 self.current_mode = Mode::Safe 
                             },
@@ -285,7 +291,7 @@ impl App {
                             },
 
                             KeyCode::Char('n') => {
-                                self.current_mode = Mode::Normal 
+                                self.current_mode = Mode::Debug 
                             },
 
                             KeyCode::Char('c') => {
@@ -355,6 +361,14 @@ impl App {
         self.prev_positions.insert(rand);
     }
 
+    fn save() {
+
+    }
+
+    fn get_save_string() {
+
+    }
+
     fn goto(&mut self) {
         let points = match self.parse_buffer_goto() {
             Ok(x) => x,
@@ -385,7 +399,7 @@ impl App {
 
     fn get_current_mode_string(&self) -> &str {
         let string = match self.current_mode {
-            Mode::Normal => { "Normal" },
+            Mode::Debug => { "Debug" },
             Mode::Safe => { "Safe" },
             Mode::Control => { "Control" },
             Mode::Buffer => { "Buffer" }
@@ -410,6 +424,13 @@ impl App {
         return 0.0
     }
 
+    fn get_current_angle_set(&self) ->  AngleSet {
+        let beam_angle = self.get_current_beam_angle();
+        let column_angle = self.get_current_column_angle();
+
+        return AngleSet { column_angle, beam_angle, rotation_angle: 0.0 }
+    }
+
     fn make_plain_paragraph(&self, content: String) -> Paragraph {
         let paragraph = Paragraph::new(content)
             .style(Style::default())
@@ -427,7 +448,7 @@ impl App {
             Dataset::default()
                 .marker(symbols::Marker::Braille)
                 .graph_type(GraphType::Line)
-                .data(&[(0.0, 0.0), (0.87, 0.47), (0.38, -0.39)])
+                .data(&[(0.0, 0.0), (0.87, 0.47), (0.38, 0.39)])
         ];
 
         return datasets

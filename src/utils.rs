@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::Write;
+
 use tui::widgets::ListState;
 
 pub struct ShiftingVec<T> {
@@ -32,3 +35,22 @@ impl<T> ShiftingVec<T> {
         return &mut self.state;
     }
 }
+
+pub struct Utils{}
+
+impl Utils {
+    pub fn save_to_file(path: String, contents: String) -> Result<String, std::io::Error>{
+        let mut file = match File::create(format!("{}", path)) {
+            Ok(x) => x,
+            Err(e) => return Err(e)
+        };
+
+        match file.write(contents.as_bytes()) {
+            Ok(_) => return Ok(format!("successfully saved to {}", path)),
+            Err(e) => return Err(e)
+        }
+
+    }
+
+}
+
