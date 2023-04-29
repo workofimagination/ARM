@@ -1,4 +1,5 @@
 use crate::utils::{ShiftingVec, Utils};
+use crate::Calc;
 
 use std::num::ParseFloatError;
 use std::sync::mpsc;
@@ -23,7 +24,7 @@ enum Event<I> {
 }
 
 enum Mode {
-    Debug,
+    Normal,
     Safe,
     Control,
     Buffer
@@ -265,7 +266,7 @@ impl App {
             match rx.recv().unwrap() {
                 Event::Input(event) => match event.code {
                     event => match self.current_mode {
-                        Mode::Debug => match event {
+                        Mode::Normal => match event {
                             KeyCode::Esc => {
                                 self.current_mode = Mode::Safe 
                             },
@@ -295,7 +296,7 @@ impl App {
                             },
 
                             KeyCode::Char('n') => {
-                                self.current_mode = Mode::Debug 
+                                self.current_mode = Mode::Normal 
                             },
 
                             KeyCode::Char('c') => {
@@ -366,7 +367,7 @@ impl App {
     }
 
     fn goto(&mut self) {
-        let points = match self.parse_buffer_goto() {
+        let (x, y) = match self.parse_buffer_goto() {
             Ok(x) => x,
             Err(e) => {
                 self.command_output.insert(format!("{}", e));
@@ -374,7 +375,7 @@ impl App {
             }
         };
 
-        self.command_output.insert(format!("going to new point"));
+        self.command_output.insert(format!("going to point: {}, {}", x, y));
     }
 
     fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {
@@ -395,7 +396,7 @@ impl App {
 
     fn get_current_mode_string(&self) -> &str {
         let string = match self.current_mode {
-            Mode::Debug => { "Debug" },
+            Mode::Normal => { "Normal" },
             Mode::Safe => { "Safe" },
             Mode::Control => { "Control" },
             Mode::Buffer => { "Buffer" }
