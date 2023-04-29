@@ -278,7 +278,11 @@ impl App {
 
                             KeyCode::Char('a') => {
                                 self.add_random_point();
-                            }
+                            },
+
+                            KeyCode::Char('s') => {
+                                self.save_current_angles();
+                            },
 
                             _ => {}
                         },
@@ -361,14 +365,6 @@ impl App {
         self.prev_positions.insert(rand);
     }
 
-    fn save() {
-
-    }
-
-    fn get_save_string() {
-
-    }
-
     fn goto(&mut self) {
         let points = match self.parse_buffer_goto() {
             Ok(x) => x,
@@ -422,6 +418,17 @@ impl App {
 
     fn get_current_beam_angle(&self) -> f32 {
         return 0.0
+    }
+
+    fn save_current_angles(&mut self) {
+        let current_angles = self.get_current_angle_set();
+
+        let save_string = format!("{} {} {}", current_angles.column_angle, current_angles.beam_angle, current_angles.rotation_angle);
+
+        match Utils::save_to_file("./output".to_string(), save_string) {
+            Ok(x) => self.command_output.insert(x),
+            Err(e) => self.command_output.insert(format!("unable to save to file: {}", e))
+        }
     }
 
     fn get_current_angle_set(&self) ->  AngleSet {
