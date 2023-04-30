@@ -274,6 +274,7 @@ impl App {
                             KeyCode::Char('q') => {
                                 disable_raw_mode().unwrap();
                                 terminal.show_cursor().unwrap();
+                                self.save_current_angles();
                                 break;
                             },
 
@@ -292,6 +293,7 @@ impl App {
                             KeyCode::Char('q') => {
                                 disable_raw_mode().unwrap();
                                 terminal.show_cursor().unwrap();
+                                self.save_current_angles();
                                 break;
                             },
 
