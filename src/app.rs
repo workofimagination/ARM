@@ -189,6 +189,7 @@ impl App {
                 rect.render_widget(buffer, bottom_chunks[1]);
 
                 let dataset = self.get_datasets();
+
                 
                 let map = Chart::new(dataset)
                     .block(
