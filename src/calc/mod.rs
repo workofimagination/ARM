@@ -63,7 +63,7 @@ impl Calc {
         return Point{ x, y }
      }
 
-    pub fn snap(precision: f32, angle: f32) -> f32{
+    pub fn snap(angle: f32, precision: f32) -> f32{
         return f32::round(angle / precision) * precision;
     }
 
