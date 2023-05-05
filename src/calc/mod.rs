@@ -71,6 +71,10 @@ impl Calc {
         return Point{ x, y }
      }
 
+    pub fn snap(angle: f32, precision: f32) -> f32{
+        return f32::round(angle / precision) * precision;
+    }
+
     pub fn random_test() {
         let mut rng = rand::thread_rng();
         let origin = Point {

@@ -1,4 +1,5 @@
 use crate::utils::{ShiftingVec, Utils};
+use crate::Calc;
 
 use std::num::ParseFloatError;
 use std::sync::mpsc;
@@ -22,7 +23,7 @@ enum Event<I> {
 }
 
 enum Mode {
-    Debug,
+    Normal,
     Safe,
     Control,
     Buffer
@@ -186,6 +187,7 @@ impl App {
                 rect.render_widget(buffer, bottom_chunks[1]);
 
                 let dataset = self.get_datasets();
+
                 
                 let map = Chart::new(dataset)
                     .block(
@@ -263,7 +265,7 @@ impl App {
             match rx.recv().unwrap() {
                 Event::Input(event) => match event.code {
                     event => match self.current_mode {
-                        Mode::Debug => match event {
+                        Mode::Normal => match event {
                             KeyCode::Esc => {
                                 self.current_mode = Mode::Safe 
                             },
@@ -271,6 +273,7 @@ impl App {
                             KeyCode::Char('q') => {
                                 disable_raw_mode().unwrap();
                                 terminal.show_cursor().unwrap();
+                                self.save_current_angles();
                                 break;
                             },
 
@@ -289,11 +292,12 @@ impl App {
                             KeyCode::Char('q') => {
                                 disable_raw_mode().unwrap();
                                 terminal.show_cursor().unwrap();
+                                self.save_current_angles();
                                 break;
                             },
 
                             KeyCode::Char('n') => {
-                                self.current_mode = Mode::Debug 
+                                self.current_mode = Mode::Normal 
                             },
 
                             KeyCode::Char('c') => {
@@ -393,7 +397,7 @@ impl App {
 
     fn get_current_mode_string(&self) -> &str {
         let string = match self.current_mode {
-            Mode::Debug => { "Debug" },
+            Mode::Normal => { "Normal" },
             Mode::Safe => { "Safe" },
             Mode::Control => { "Control" },
             Mode::Buffer => { "Buffer" }
