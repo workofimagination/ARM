@@ -12,9 +12,8 @@ impl<T> ShiftingVec<T> {
     pub fn initalize(size: usize) -> ShiftingVec<T> {
         let mut items: Vec<T> = Vec::with_capacity(size);
 
-        unsafe {
-            items.set_len(size);
-        }
+        //this is actually safe don't worry about it promise :)
+        unsafe { items.set_len(size); }
 
         let state = ListState::default();
     
@@ -36,7 +35,7 @@ impl<T> ShiftingVec<T> {
     }
 }
 
-pub struct Utils{}
+pub struct Utils;
 
 impl Utils {
     pub fn save_to_file(path: String, contents: String) -> Result<String, std::io::Error>{
@@ -49,8 +48,6 @@ impl Utils {
             Ok(_) => return Ok(format!("successfully saved to {}", path)),
             Err(e) => return Err(e)
         }
-
     }
-
 }
 

@@ -1,6 +1,8 @@
 mod utils;
+mod driver;
 mod calc;
 mod app;
+mod stepper;
 use calc::Calc;
 use app::App;
 

@@ -13,6 +13,14 @@ pub struct Calc {
 }
 
 impl Calc {
+    pub fn new(origin_x: f32, origin_y: f32, radius: f32) -> Calc {
+        let origin = Point {
+            x: origin_x,
+            y: origin_y
+        };
+
+        return Calc { origin, radius }
+    }
     pub fn dist(start: &Point, e: &Point) -> f32 {
         let d = f32::sqrt((start.x - e.x).powi(2) + (start.y - e.y).powi(2));
 

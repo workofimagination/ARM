@@ -14,8 +14,7 @@ use tui::backend::CrosstermBackend;
 use tui::layout::{Layout, Direction, Constraint};
 use tui::style::Style;
 use tui::text::{Span, Spans};
-use tui::widgets::{Paragraph, Block, Borders, ListState, ListItem, List, Dataset, Chart, Axis, GraphType};
-
+use tui::widgets::{Paragraph, Block, Borders, ListItem, List, Dataset, Chart, Axis, GraphType};
 
 enum Event<I> {
     Input(I),
@@ -52,14 +51,13 @@ pub struct App {
 impl App {
     pub fn make() -> App {
         let prev_positions = ShiftingVec::<Point>::initalize(12);
-
         let command_output = ShiftingVec::<String>::initalize(12);
 
         let current_mode = Mode::Safe;
 
-        let buffer = "".to_string();
+        let buffer = String::from("");
 
-        return App { prev_positions, command_output, current_mode, buffer}
+        return App { prev_positions, command_output, current_mode, buffer }
 
     }
 
@@ -366,7 +364,7 @@ impl App {
     }
 
     fn goto(&mut self) {
-        let points = match self.parse_buffer_goto() {
+        let (x, y) = match self.parse_buffer_goto() {
             Ok(x) => x,
             Err(e) => {
                 self.command_output.insert(format!("{}", e));
@@ -374,7 +372,7 @@ impl App {
             }
         };
 
-        self.command_output.insert(format!("going to new point"));
+        self.command_output.insert(format!("successfully parsed buffer"));
     }
 
     fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {

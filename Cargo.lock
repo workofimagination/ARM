@@ -184,6 +184,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rppal"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "612e1a22e21f08a246657c6433fe52b773ae43d07c9ef88ccfc433cc8683caba"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -231,6 +240,7 @@ version = "0.1.0"
 dependencies = [
  "crossterm 0.26.1",
  "rand",
+ "rppal",
  "tui",
 ]
 
