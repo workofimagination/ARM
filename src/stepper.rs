@@ -33,4 +33,25 @@ impl Stepper {
     //         self.step.set_low();
     //     }
     // }
+
+}
+
+pub struct TestStepper {
+    direction_pin: u8,
+    step_pin: u8,
+}
+
+impl TestStepper {
+    pub fn new(direction_pin: u8, step_pin: u8) -> Self {
+        Self { direction_pin, step_pin}
+    }
+
+    pub fn step(&mut self, direction: bool) {
+        if direction {  }
+        else {  };
+    }
+
+    pub fn reset(&mut self) { // must call reset before calling step() again
+        
+    }
 }

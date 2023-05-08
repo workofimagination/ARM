@@ -75,6 +75,39 @@ impl Calc {
         return f32::round(angle / precision) * precision;
     }
 
+    pub fn smooth(points: Vec<i64>) -> Vec<i64> {
+        let amp = 1;
+        let mut smoothed: Vec<i64> = Vec::new();
+
+        for i in &points {
+            let t = i64::min(i64::max((i-points[0])/(points[points.len()-1]), 0), 1);
+
+            let new_point = amp*(-(-(t*t) + t));
+            smoothed.push(new_point);
+        }
+
+        return smoothed;
+    }
+
+    pub fn normalize(min: i64, max: i64, start: i64, end: i64, input: i64) -> i64 {
+        return (end-start)*((input-min)/(max-min))+start
+    }
+
+    pub fn normalize_vec(start: i64, end: i64, input: Vec<i64>) -> Option<Vec<i64>> {
+        if input.len() == 0 { return None }
+        let mut new = input.clone();
+        let min = input.clone().into_iter().min().unwrap();
+        let max = input.clone().into_iter().max().unwrap() + 1;
+
+        for i in 0..input.len() {
+            new[i] = Calc::normalize(min, max, start, end, input[i]);
+        }
+
+        return Some(new);
+
+    }
+
+
     pub fn random_test() {
         let mut rng = rand::thread_rng();
         let origin = Point {

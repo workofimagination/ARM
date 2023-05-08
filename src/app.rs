@@ -1,3 +1,5 @@
+use crate::driver::{self, DriverError};
+use crate::driver::Driver;
 use crate::utils::{ShiftingVec, Utils};
 use crate::Calc;
 
@@ -46,7 +48,8 @@ pub struct App {
     prev_positions: ShiftingVec<Point>,
     command_output: ShiftingVec<String>,
     current_mode: Mode,
-    buffer: String
+    buffer: String,
+    driver: Driver,
 }
 
 impl App {
@@ -58,7 +61,9 @@ impl App {
 
         let buffer = String::from("");
 
-        return App { prev_positions, command_output, current_mode, buffer }
+        let driver = Driver::new();
+
+        return App { prev_positions, command_output, current_mode, buffer, driver }
 
     }
 
@@ -186,8 +191,14 @@ impl App {
                     );
                 rect.render_widget(buffer, bottom_chunks[1]);
 
-                let dataset = self.get_datasets();
-
+                let data = self.get_2d_points();
+                //let dataset = self.get_datasets();
+                let dataset = vec![
+                    Dataset::default()
+                        .marker(symbols::Marker::Braille)
+                        .graph_type(GraphType::Line)
+                        .data(&data)
+                ];
                 
                 let map = Chart::new(dataset)
                     .block(
@@ -197,11 +208,11 @@ impl App {
                     )
                     .x_axis(
                         Axis::default()
-                        .bounds([0.0, 2.0])
+                        .bounds([-2.0, 2.0])
                     )
                     .y_axis(
                         Axis::default()
-                        .bounds([0.0, 1.0])
+                        .bounds([0.0, 2.0])
                     );
                 
                 rect.render_widget(map, middle_chunks[1]);
@@ -277,6 +288,10 @@ impl App {
                                 break;
                             },
 
+                            KeyCode::Char('d') => {
+                                dbg!(self.get_2d_points());
+                            }
+
                             KeyCode::Char('a') => {
                                 self.add_random_point();
                             },
@@ -314,6 +329,54 @@ impl App {
                         Mode::Control => match event {
                             KeyCode::Esc => {
                                 self.current_mode = Mode::Safe
+                            },
+
+                            KeyCode::Left => {
+                                match self.driver.move_direction(driver::Direction::Left) {
+                                    Ok(()) => (),
+                                    Err(e) => match e {
+                                        DriverError::UnReachable => {
+                                            let error_message = String::from("unable to reach position");
+                                            self.command_output.insert(error_message);
+                                        }
+                                    }
+                                }
+                            },
+
+                            KeyCode::Right => {
+                                match self.driver.move_direction(driver::Direction::Right) {
+                                    Ok(()) => (),
+                                    Err(e) => match e {
+                                        DriverError::UnReachable => {
+                                            let error_message = String::from("unable to reach position");
+                                            self.command_output.insert(error_message);
+                                        }
+                                    }
+                                }
+                            },
+
+                            KeyCode::Up => {
+                                match self.driver.move_direction(driver::Direction::Up) {
+                                    Ok(()) => (),
+                                    Err(e) => match e {
+                                        DriverError::UnReachable => {
+                                            let error_message = String::from("unable to reach position");
+                                            self.command_output.insert(error_message);
+                                        }
+                                    }
+                                }
+                            },
+
+                            KeyCode::Down => {
+                                match self.driver.move_direction(driver::Direction::Down) {
+                                    Ok(()) => (),
+                                    Err(e) => match e {
+                                        DriverError::UnReachable => {
+                                            let error_message = String::from("unable to reach position");
+                                            self.command_output.insert(error_message);
+                                        }
+                                    }
+                                }
                             },
 
                             KeyCode::Enter => {
@@ -377,6 +440,13 @@ impl App {
         };
 
         self.command_output.insert(format!("successfully parsed buffer"));
+
+        match self.driver.goto_point(x, y) {
+            Ok(()) => self.command_output.insert(format!("successfully wennt to point {} {}", x, y)),
+            Err(e) => match e {
+                DriverError::UnReachable => self.command_output.insert(format!("out of range"))
+            }
+        }
     }
 
     fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {
@@ -407,19 +477,19 @@ impl App {
     } 
 
     fn get_current_x(&self) -> f32 {
-        return 0.0
+        return self.driver.current_position.x
     }
 
     fn get_current_y(&self) -> f32 {
-        return 0.0
+        return self.driver.current_position.y
     }
 
     fn get_current_column_angle(&self) -> f32 {
-        return 0.0
+        return self.driver.get_column_angle()
     }
 
     fn get_current_beam_angle(&self) -> f32 {
-        return 0.0
+        return self.driver.get_beam_angle()
     }
 
     fn save_current_angles(&mut self) {
@@ -452,14 +522,10 @@ impl App {
         return paragraph
     }
 
-    fn get_datasets(&self) -> Vec<Dataset> {
-        let datasets = vec![
-            Dataset::default()
-                .marker(symbols::Marker::Braille)
-                .graph_type(GraphType::Line)
-                .data(&[(0.0, 0.0), (0.87, 0.47), (0.38, 0.39)])
-        ];
+    fn get_2d_points(&self) -> Vec<(f64, f64)>{
+        let column = self.driver.get_column_position();
+        let beam = self.driver.get_beam_position();
 
-        return datasets
+        return vec![(0.0,0.0), column, beam]
     }
 }
