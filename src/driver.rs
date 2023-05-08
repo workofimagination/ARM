@@ -6,16 +6,17 @@ use crate::stepper::TestStepper;
 use crate::calc::{Calc, Point};
 
 pub struct Driver {
-    column_motor: Arc<Mutex<TestStepper>>,
-    beam_motor: Arc<Mutex<TestStepper>>,
-    column_angle: f32,
-    beam_angle: f32,
-    step_degree: f32,
-    micro_delay_default: i64,
-    micro_delay_max: i64,
-    micro_delay_min: i64,
+    pub column_motor: Arc<Mutex<TestStepper>>,
+    pub beam_motor: Arc<Mutex<TestStepper>>,
+    pub column_angle: f32,
+    pub beam_angle: f32,
+    pub step_degree: f32,
+    pub movement_amount: f32,
+    pub micro_delay_default: i64,
+    pub micro_delay_max: i64,
+    pub micro_delay_min: i64,
     pub current_position: Point,
-    calc: Calc
+    pub calc: Calc
 }
 
 #[derive(Debug)]
@@ -37,15 +38,15 @@ impl Driver {
         let column_angle = 0.0;
         let beam_angle = 0.0;
         let step_degree = 1.0/4.0;
-        let micro_delay_default = 500;
+        let movement_amount = 0.01;
+        let micro_delay_default = 0;
         let micro_delay_min = 500;
         let micro_delay_max = 1000;
         let current_position = Point { x: 2.0, y: 0.0 };
         let calc = Calc::new(0.0, 0.0, 1.0);
 
-        return Driver { column_motor, beam_motor, column_angle, beam_angle, step_degree,
-                        micro_delay_default, micro_delay_max, micro_delay_min, current_position,
-                        calc 
+        return Driver { column_motor, beam_motor, column_angle, beam_angle, step_degree, movement_amount,
+                        micro_delay_default, micro_delay_max, micro_delay_min, current_position, calc 
         }
     }
 
@@ -151,27 +152,24 @@ impl Driver {
         self.current_position.y = y;
 
         Ok(())
-
-        //Driver::move_motor_smooth(&mut self.column_motor, column_smoothed, column_dir);
-        //Driver::move_motor_smooth(&mut self.beam_motor, beam_smoothed, column_dir);
     }
 
     pub fn move_direction(&mut self, direction: Direction) -> Result<(), DriverError>{
         match direction {
             Direction::Left => {
-                return self.goto_point(self.current_position.x - 0.05, self.current_position.y);                
+                return self.goto_point(self.current_position.x - self.movement_amount, self.current_position.y);                
             },
 
             Direction::Right => {
-                return self.goto_point(self.current_position.x + 0.05, self.current_position.y);
+                return self.goto_point(self.current_position.x + self.movement_amount, self.current_position.y);
             },
 
             Direction::Up => {
-                return self.goto_point(self.current_position.x, self.current_position.y + 0.05);
+                return self.goto_point(self.current_position.x, self.current_position.y + self.movement_amount);
             },
             
             Direction::Down => {
-                return self.goto_point(self.current_position.x, self.current_position.y - 0.05);
+                return self.goto_point(self.current_position.x, self.current_position.y - self.movement_amount);
             }
         } 
     }

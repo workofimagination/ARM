@@ -152,6 +152,18 @@ impl App {
                     )
                     .split(middle_chunks[0]);
 
+                let top_middle_left_chunks = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .margin(0)
+                    .constraints(
+                        [
+                            Constraint::Percentage(50),
+                            Constraint::Percentage(50)
+                        ]
+                        .as_ref()
+                    )
+                    .split(middle_left_chunks[0]);
+
                 let bottom_chunks = Layout::default()
                     .direction(Direction::Horizontal)
                     .margin(0)
@@ -217,11 +229,21 @@ impl App {
                 
                 rect.render_widget(map, middle_chunks[1]);
 
+                let config_data = self.get_config_text();
+                let config = Paragraph::new(config_data)
+                    .block(
+                        Block::default()
+                            .title("Config")
+                            .borders(Borders::ALL)
+                    );
+
+                rect.render_widget(config, top_middle_left_chunks[1]);
+
                 let items: Vec<ListItem> = self.prev_positions.get_items()
                     .iter()
                     .map(|i| {
                         let content = Spans::from(Span::styled(
-                            format!("{} {} {} {}", i.x, i.y, i.column_angle, i.beam_angle),
+                            format!("{} {}", i.column_angle, i.beam_angle),
                             Style::default() 
                         ));
 
@@ -236,7 +258,7 @@ impl App {
                         .title("Previous Positions")
                     );
 
-                rect.render_stateful_widget(prev_items, middle_left_chunks[0], &mut self.prev_positions.get_state());
+                rect.render_stateful_widget(prev_items, top_middle_left_chunks[0], &mut self.prev_positions.get_state());
 
                 let command_items: Vec<ListItem> = self.command_output.get_items()
                     .iter()
@@ -327,33 +349,36 @@ impl App {
                         },
 
                         Mode::Control => match event {
-                            KeyCode::Esc => {
-                                self.current_mode = Mode::Safe
-                            },
+                            KeyCode::Esc => { self.current_mode = Mode::Safe },
 
-                            KeyCode::Left => {
-                                self.move_direction(driver::Direction::Left)
-                            },
+                            KeyCode::Left => { self.move_direction(driver::Direction::Left) },
 
-                            KeyCode::Right => {
-                                self.move_direction(driver::Direction::Right);
-                            },
+                            KeyCode::Right => { self.move_direction(driver::Direction::Right); },
 
-                            KeyCode::Up => {
-                                self.move_direction(driver::Direction::Up);
-                            },
+                            KeyCode::Up => { self.move_direction(driver::Direction::Up); },
 
-                            KeyCode::Down => {
-                                self.move_direction(driver::Direction::Down);
-                            },
+                            KeyCode::Down => { self.move_direction(driver::Direction::Down); },
 
-                            KeyCode::Char('\\') => {
-                                self.goto_smooth();
-                            }
+                            KeyCode::Char('\\') => { self.goto_smooth(); }
 
-                            KeyCode::Enter => {
-                                self.goto()
-                            }
+                            KeyCode::Char('+') => { self.increase_movement_amount(); },
+
+                            KeyCode::Char('-') => { self.decrease_movement_amount(); }
+
+                            KeyCode::Char('[') => { self.increase_max_delay(); }
+
+                            KeyCode::Char(']') => { self.decrease_max_delay(); }
+
+                            KeyCode::Char(';') => { self.increase_min_delay(); }
+
+                            KeyCode::Char('\'') => { self.decrease_min_delay(); }
+
+                            KeyCode::Char(',') => { self.decrease_delay(); }
+
+                            KeyCode::Char('.') => { self.increase_delay(); }
+
+                            KeyCode::Enter => { self.goto(); }
+
                             _ => {}
                         },
 
@@ -382,6 +407,7 @@ impl App {
                         }
                     }
                 },
+
                 Event::Tick => {}
             }
         }
@@ -400,6 +426,16 @@ impl App {
     fn add_random_point(&mut self) {
         let rand = App::gen_random_point();
         self.prev_positions.insert(rand);
+    }
+
+    fn add_current_position(&mut self) {
+        let current_point = self.driver.current_position.clone();
+        let beam_angle = self.driver.get_beam_angle();
+        let column_angle = self.driver.get_column_angle();
+
+        let current_position = Point { x: current_point.x, y: current_point.y, beam_angle, column_angle };
+
+        self.prev_positions.insert(current_position);
     }
 
     fn move_direction(&mut self, dir: driver::Direction) {
@@ -423,6 +459,8 @@ impl App {
             }
         };
 
+        self.add_current_position();
+        
         match self.driver.goto_point_smooth(x, y) {
             Ok(()) => (),
             Err(e) => match e {
@@ -444,6 +482,8 @@ impl App {
         };
 
         self.command_output.insert(format!("successfully parsed buffer"));
+
+        self.add_current_position();
 
         match self.driver.goto_point(x, y) {
             Ok(()) => self.command_output.insert(format!("successfully wennt to point {} {}", x, y)),
@@ -531,5 +571,60 @@ impl App {
         let beam = self.driver.get_beam_position();
 
         return vec![(0.0,0.0), column, beam]
+    }
+
+    fn increase_movement_amount(&mut self) {
+        self.driver.movement_amount *= 1.25;
+    }
+
+    fn decrease_movement_amount(&mut self) {
+        self.driver.movement_amount /= 1.25;
+    }
+
+    fn increase_max_delay(&mut self) {
+        self.driver.micro_delay_max += 10;
+    }
+
+    fn decrease_max_delay(&mut self) {
+        self.driver.micro_delay_max -= 10;
+    }
+
+    fn increase_min_delay(&mut self) {
+        self.driver.micro_delay_min += 10;
+    }
+
+    fn decrease_min_delay(&mut self) {
+        self.driver.micro_delay_min -= 10;
+    }
+
+    fn increase_delay(&mut self) {
+        self.driver.micro_delay_default += 10;
+    }
+
+    fn decrease_delay(&mut self) {
+        self.driver.micro_delay_default -= 10;
+    }
+
+    fn get_config_text(&self) -> Vec<Spans>{
+        let text = vec![
+            Spans::from(vec![
+                Span::raw("STP DELY: "),
+                Span::raw(format!("{}", self.driver.micro_delay_default))
+            ]),
+            Spans::from(vec![
+                Span::raw("MAX DELY: "),
+                Span::raw(format!("{}", self.driver.micro_delay_max))
+            ]),
+            Spans::from(vec![
+                Span::raw("MIN DELY: "),
+                Span::raw(format!("{}", self.driver.micro_delay_min))
+            ]),
+            Spans::from(vec![
+                Span::raw("MVNT AMT: "),
+                Span::raw(format!("{}", self.driver.movement_amount))
+            ]),
+        ];
+
+        return text
     }
 }

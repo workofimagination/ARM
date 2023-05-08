@@ -2,6 +2,7 @@ use rand::Rng;
 use std::time::{Duration, Instant};
 use std::f32::consts::PI;
 
+#[derive(Clone)]
 pub struct Point {
     pub x: f32,
     pub y: f32
