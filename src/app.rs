@@ -1,23 +1,25 @@
 use crate::driver::{self, DriverError};
 use crate::driver::Driver;
 use crate::utils::{ShiftingVec, Utils};
-use crate::Calc;
 
 use std::num::ParseFloatError;
+use std::rc::Rc;
+use std::sync::Arc;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
+use std::sync::mpsc::Receiver;
 
 use rand::Rng;
 
-use crossterm::event::{self, KeyCode};
+use crossterm::event::{self, KeyCode, KeyEvent};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use tui::{Terminal, symbols};
 use tui::backend::CrosstermBackend;
 use tui::layout::{Layout, Direction, Constraint};
 use tui::style::Style;
 use tui::text::{Span, Spans};
-use tui::widgets::{Paragraph, Block, Borders, ListItem, List, Dataset, Chart, Axis, GraphType};
+use tui::widgets::{Paragraph, Block, Borders, ListItem, List, Dataset, Chart, Axis, GraphType, ListState};
 
 enum Event<I> {
     Input(I),
@@ -104,7 +106,7 @@ impl App {
                 let size = rect.size();
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
-                    .margin(2)
+                    .margin(0)
                     .constraints(
                         [
                             Constraint::Length(3),
@@ -177,120 +179,44 @@ impl App {
                     .split(chunks[2]);
 
                 let current_x = self.make_plain_paragraph(format!("Current X: {}", self.get_current_x()));
-
                 rect.render_widget(current_x, top_chunks[0]);
 
-                let current_y = self.make_plain_paragraph(format!("Current Y: {}", self.get_current_y()));
 
+                let current_y = self.make_plain_paragraph(format!("Current Y: {}", self.get_current_y()));
                 rect.render_widget(current_y, top_chunks[1]);
 
-                let current_column = self.make_plain_paragraph(format!("Column Angle: {}", self.get_current_column_angle()));
 
+                let current_column = self.make_plain_paragraph(format!("Column Angle: {}", self.get_current_column_angle()));
                 rect.render_widget(current_column, top_chunks[2]);
 
-                let current_beam = self.make_plain_paragraph(format!("Beam Angle: {}", self.get_current_beam_angle()));
 
+                let current_beam = self.make_plain_paragraph(format!("Beam Angle: {}", self.get_current_beam_angle()));
                 rect.render_widget(current_beam, top_chunks[3]);
 
-                let buffer = Paragraph::new(self.buffer.clone())
-                    .style(Style::default())
-                    .alignment(tui::layout::Alignment::Center)
-                    .block(
-                        Block::default()
-                            .borders(Borders::ALL)
-                            .style(Style::default())
-                            .border_type(tui::widgets::BorderType::Plain)
-                    );
+                let buffer = self.make_buffer();
                 rect.render_widget(buffer, bottom_chunks[1]);
 
+                
                 let data = self.get_2d_points();
-                //let dataset = self.get_datasets();
-                let dataset = vec![
-                    Dataset::default()
-                        .marker(symbols::Marker::Braille)
-                        .graph_type(GraphType::Line)
-                        .data(&data)
-                ];
-                
-                let map = Chart::new(dataset)
-                    .block(
-                        Block::default()
-                        .title("map")
-                        .borders(Borders::ALL)
-                    )
-                    .x_axis(
-                        Axis::default()
-                        .bounds([-2.0, 2.0])
-                    )
-                    .y_axis(
-                        Axis::default()
-                        .bounds([0.0, 2.0])
-                    );
-                
+                let map = self.make_map(&data);
                 rect.render_widget(map, middle_chunks[1]);
 
-                let config_data = self.get_config_text();
-                let config = Paragraph::new(config_data)
-                    .block(
-                        Block::default()
-                            .title("Config")
-                            .borders(Borders::ALL)
-                    );
 
+                let config = self.make_config_window();
                 rect.render_widget(config, top_middle_left_chunks[1]);
 
-                let items: Vec<ListItem> = self.prev_positions.get_items()
-                    .iter()
-                    .map(|i| {
-                        let content = Spans::from(Span::styled(
-                            format!("{} {}", i.column_angle, i.beam_angle),
-                            Style::default() 
-                        ));
 
-                        ListItem::new(content).style(Style::default())
-                    })
-                    .collect();
+                let (prev_items, state) = self.make_previous_points();
+                rect.render_stateful_widget(prev_items, top_middle_left_chunks[0], state);
 
-                let prev_items = List::new(items)
-                    .block(
-                        Block::default()
-                        .borders(Borders::ALL)
-                        .title("Previous Positions")
-                    );
 
-                rect.render_stateful_widget(prev_items, top_middle_left_chunks[0], &mut self.prev_positions.get_state());
+                let (command_items, state) = self.make_command_output();
+                rect.render_stateful_widget(command_items, middle_left_chunks[1], state);
 
-                let command_items: Vec<ListItem> = self.command_output.get_items()
-                    .iter()
-                    .map(|i| {
-                        let content = Spans::from(Span::styled(
-                            format!("{}", i),
-                            Style::default() 
-                        ));
 
-                        ListItem::new(content).style(Style::default())
-                    })
-                    .collect();
-
-                let command_items = List::new(command_items)
-                    .block(
-                        Block::default()
-                            .title("Command Output")
-                            .borders(Borders::ALL)
-                    );
-
-                rect.render_stateful_widget(command_items, middle_left_chunks[1], &mut self.command_output.get_state());
-
-                let current_mode_box = Paragraph::new(self.get_current_mode_string())
-                    .style(Style::default())
-                    .alignment(tui::layout::Alignment::Center)
-                    .block(
-                        Block::default()
-                            .borders(Borders::ALL)
-                            .style(Style::default())
-                            .border_type(tui::widgets::BorderType::Plain)
-                    );
+                let current_mode_box = self.make_current_mode_box();
                 rect.render_widget(current_mode_box, bottom_chunks[0]);
+
             }).unwrap();
 
             // END OF PAGE RENDERING, MOVE THIS SHIT INTO A FUNCTION LATER
@@ -361,17 +287,17 @@ impl App {
 
                             KeyCode::Char('\\') => { self.goto_smooth(); }
 
-                            KeyCode::Char('+') => { self.increase_movement_amount(); },
+                            KeyCode::Char('=') => { self.increase_movement_amount(); },
 
                             KeyCode::Char('-') => { self.decrease_movement_amount(); }
 
-                            KeyCode::Char('[') => { self.increase_max_delay(); }
+                            KeyCode::Char('[') => { self.decrease_max_delay(); }
 
-                            KeyCode::Char(']') => { self.decrease_max_delay(); }
+                            KeyCode::Char(']') => { self.increase_max_delay(); }
 
-                            KeyCode::Char(';') => { self.increase_min_delay(); }
+                            KeyCode::Char(';') => { self.decrease_min_delay(); }
 
-                            KeyCode::Char('\'') => { self.decrease_min_delay(); }
+                            KeyCode::Char('\'') => { self.increase_min_delay(); }
 
                             KeyCode::Char(',') => { self.decrease_delay(); }
 
@@ -412,6 +338,121 @@ impl App {
             }
         }
     }
+
+    fn make_map<'a>(&'a mut self, data: &'a Vec<(f64, f64)>) -> Chart {
+        //let dataset = self.get_datasets();
+        let dataset = vec![
+            Dataset::default()
+                .marker(symbols::Marker::Braille)
+                .graph_type(GraphType::Line)
+                .data(data)
+        ];
+        
+        let map = Chart::new(dataset)
+            .block(
+                Block::default()
+                .title("Map")
+                .borders(Borders::ALL)
+            )
+            .x_axis(
+                Axis::default()
+                .bounds([-2.0, 2.0])
+            )
+            .y_axis(
+                Axis::default()
+                .bounds([-2.0, 2.0])
+            );
+
+        return map;
+    }
+
+    fn make_buffer(&mut self) -> Paragraph {
+        let buffer = Paragraph::new(self.buffer.clone())
+            .style(Style::default())
+            .alignment(tui::layout::Alignment::Center)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(Style::default())
+                    .border_type(tui::widgets::BorderType::Plain)
+            );
+
+        return buffer
+    }
+
+    fn make_config_window(&mut self) -> Paragraph {
+        let config_data = self.get_config_text();
+        let config = Paragraph::new(config_data)
+            .block(
+                Block::default()
+                    .title("Info")
+                    .borders(Borders::ALL)
+            );
+
+        return config
+    }
+
+    fn make_previous_points(&mut self) -> (List, &mut ListState) {
+        let items: Vec<ListItem> = self.prev_positions.get_items()
+            .iter()
+            .map(|i| {
+                let content = Spans::from(Span::styled(
+                    format!("{} {}", i.column_angle, i.beam_angle),
+                    Style::default() 
+                ));
+
+                ListItem::new(content).style(Style::default())
+            })
+            .collect();
+
+        let prev_items = List::new(items)
+            .block(
+                Block::default()
+                .borders(Borders::ALL)
+                .title("Previous Positions")
+            );
+
+        return (prev_items, self.prev_positions.get_state())
+    }
+
+    fn make_command_output(&mut self) -> (List, &mut ListState) {
+        let command_items: Vec<ListItem> = self.command_output.get_items()
+            .iter()
+            .map(|i| {
+                let content = Spans::from(Span::styled(
+                    format!("{}", i),
+                    Style::default() 
+                ));
+
+                ListItem::new(content).style(Style::default())
+            })
+            .collect();
+
+        let command_items = List::new(command_items)
+            .block(
+                Block::default()
+                    .title("Command Output")
+                    .borders(Borders::ALL)
+            );
+
+        return (command_items, self.prev_positions.get_state())
+    }
+
+    fn make_current_mode_box(&mut self) -> Paragraph {
+        let current_mode_box = Paragraph::new(self.get_current_mode_string())
+            .style(Style::default())
+            .alignment(tui::layout::Alignment::Center)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(Style::default())
+                    .border_type(tui::widgets::BorderType::Plain)
+            );
+
+        return current_mode_box
+    }
+
+    //END OF MAKE FUNCTIONS
 
     fn gen_random_point() -> Point {
         let mut rng = rand::thread_rng();
@@ -608,23 +649,36 @@ impl App {
     fn get_config_text(&self) -> Vec<Spans>{
         let text = vec![
             Spans::from(vec![
-                Span::raw("STP DELY: "),
+                Span::raw("STP DELAY: "),
                 Span::raw(format!("{}", self.driver.micro_delay_default))
             ]),
             Spans::from(vec![
-                Span::raw("MAX DELY: "),
+                Span::raw("MAX DELAY: "),
                 Span::raw(format!("{}", self.driver.micro_delay_max))
             ]),
             Spans::from(vec![
-                Span::raw("MIN DELY: "),
+                Span::raw("MIN DELAY: "),
                 Span::raw(format!("{}", self.driver.micro_delay_min))
             ]),
             Spans::from(vec![
                 Span::raw("MVNT AMT: "),
                 Span::raw(format!("{}", self.driver.movement_amount))
             ]),
+            Spans::from(vec![
+                Span::raw("BEAM POS: "),
+                Span::raw(format!("{} {}", self.driver.get_beam_position().0, self.driver.get_beam_position().1))
+            ]),
+            Spans::from(vec![
+                Span::raw("COLUMN POS: "),
+                Span::raw(format!("{} {}", self.driver.get_column_position().0, self.driver.get_column_position().1))
+            ])
         ];
 
         return text
     }
+
+    fn handle_input(rx: &Receiver<KeyEvent>) {
+
+    }
+
 }
