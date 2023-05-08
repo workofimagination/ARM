@@ -332,52 +332,24 @@ impl App {
                             },
 
                             KeyCode::Left => {
-                                match self.driver.move_direction(driver::Direction::Left) {
-                                    Ok(()) => (),
-                                    Err(e) => match e {
-                                        DriverError::UnReachable => {
-                                            let error_message = String::from("unable to reach position");
-                                            self.command_output.insert(error_message);
-                                        }
-                                    }
-                                }
+                                self.move_direction(driver::Direction::Left)
                             },
 
                             KeyCode::Right => {
-                                match self.driver.move_direction(driver::Direction::Right) {
-                                    Ok(()) => (),
-                                    Err(e) => match e {
-                                        DriverError::UnReachable => {
-                                            let error_message = String::from("unable to reach position");
-                                            self.command_output.insert(error_message);
-                                        }
-                                    }
-                                }
+                                self.move_direction(driver::Direction::Right);
                             },
 
                             KeyCode::Up => {
-                                match self.driver.move_direction(driver::Direction::Up) {
-                                    Ok(()) => (),
-                                    Err(e) => match e {
-                                        DriverError::UnReachable => {
-                                            let error_message = String::from("unable to reach position");
-                                            self.command_output.insert(error_message);
-                                        }
-                                    }
-                                }
+                                self.move_direction(driver::Direction::Up);
                             },
 
                             KeyCode::Down => {
-                                match self.driver.move_direction(driver::Direction::Down) {
-                                    Ok(()) => (),
-                                    Err(e) => match e {
-                                        DriverError::UnReachable => {
-                                            let error_message = String::from("unable to reach position");
-                                            self.command_output.insert(error_message);
-                                        }
-                                    }
-                                }
+                                self.move_direction(driver::Direction::Down);
                             },
+
+                            KeyCode::Char('\\') => {
+                                self.goto_smooth();
+                            }
 
                             KeyCode::Enter => {
                                 self.goto()
@@ -428,6 +400,38 @@ impl App {
     fn add_random_point(&mut self) {
         let rand = App::gen_random_point();
         self.prev_positions.insert(rand);
+    }
+
+    fn move_direction(&mut self, dir: driver::Direction) {
+        match self.driver.move_direction(dir) {
+            Ok(()) => (),
+            Err(e) => match e {
+                DriverError::UnReachable => {
+                    let error_message = String::from("unable to reach position");
+                    self.command_output.insert(error_message);
+                }
+            }
+        }
+    }
+
+    fn goto_smooth(&mut self) {
+        let (x, y) = match self.parse_buffer_goto() {
+            Ok(x) => x,
+            Err(e) => {
+                self.command_output.insert(format!("{}", e));
+                return
+            }
+        };
+
+        match self.driver.goto_point_smooth(x, y) {
+            Ok(()) => (),
+            Err(e) => match e {
+                DriverError::UnReachable => {
+                    self.command_output.insert(format!("unable to reach location"));
+                    return
+                }
+            }
+        }
     }
 
     fn goto(&mut self) {
