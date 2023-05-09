@@ -57,11 +57,8 @@ impl App {
     pub fn make() -> App {
         let prev_positions = ShiftingVec::<Point>::initalize(12);
         let command_output = ShiftingVec::<String>::initalize(12);
-
         let current_mode = Mode::Safe;
-
         let buffer = String::from("");
-
         let driver = Driver::new();
 
         return App { prev_positions, command_output, current_mode, buffer, driver }
@@ -532,6 +529,9 @@ impl App {
     }
 
     fn get_config_text(&self) -> Vec<Spans>{
+        let (beam_x, beam_y) = self.driver.get_beam_position();
+        let (column_x, column_y) = self.driver.get_column_position();
+
         let text = vec![
             Spans::from(vec![
                 Span::raw("STP DELAY: "),
@@ -550,12 +550,20 @@ impl App {
                 Span::raw(format!("{}", self.driver.movement_amount))
             ]),
             Spans::from(vec![
-                Span::raw("BEAM POS: "),
-                Span::raw(format!("{} {}", self.driver.get_beam_position().0, self.driver.get_beam_position().1))
+                Span::raw("BEAM X: "),
+                Span::raw(format!("{}", beam_x))
             ]),
             Spans::from(vec![
-                Span::raw("COLUMN POS: "),
-                Span::raw(format!("{} {}", self.driver.get_column_position().0, self.driver.get_column_position().1))
+                Span::raw("BEAM Y: "),
+                Span::raw(format!("{}", beam_y))
+            ]),
+            Spans::from(vec![
+                Span::raw("COLUMN X: "),
+                Span::raw(format!("{}", column_x))
+            ]),
+            Spans::from(vec![
+                Span::raw("COLUMN Y: "),
+                Span::raw(format!("{}", column_y))
             ])
         ];
 
@@ -680,5 +688,4 @@ impl App {
         }
 
     }
-
 }

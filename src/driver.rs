@@ -42,7 +42,7 @@ impl Driver {
         let micro_delay_default = 0;
         let micro_delay_min = 500;
         let micro_delay_max = 1000;
-        let current_position = Point { x: 2.0, y: 0.0 };
+        let current_position = Point { x: 0.0, y: 2.0 };
         let calc = Calc::new(0.0, 0.0, 1.0);
 
         return Driver { column_motor, beam_motor, column_angle, beam_angle, step_degree, movement_amount,
