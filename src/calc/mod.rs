@@ -97,11 +97,11 @@ impl Calc {
     pub fn normalize_vec(start: i64, end: i64, input: Vec<i64>) -> Option<Vec<i64>> {
         if input.len() == 0 { return None }
         let mut new = input.clone();
-        let min = input.clone().into_iter().min().unwrap();
-        let max = input.clone().into_iter().max().unwrap() + 1;
+        let min = input.iter().min().unwrap();
+        let max = input.iter().max().unwrap() + 1;
 
         for i in 0..input.len() {
-            new[i] = Calc::normalize(min, max, start, end, input[i]);
+            new[i] = Calc::normalize(*min, max, start, end, input[i]);
         }
 
         return Some(new);

@@ -87,13 +87,20 @@ impl Driver {
         thread_pool.push(beam_thread);
 
         for thread in thread_pool {
-            thread.join().unwrap();
+            match thread.join() {
+                Ok(()) => (),
+                Err(e) => { println!("{:?}", e); }
+            }
         }
+
 
         self.column_angle = column_snapped;
         self.beam_angle = beam_snapped;
-        self.current_position.x = x;
-        self.current_position.y = y;
+
+        let (current_x, current_y) = self.get_current_position();
+
+        self.current_position.x = current_x;
+        self.current_position.y = current_y;
 
         Ok(())
     }
@@ -148,8 +155,11 @@ impl Driver {
 
         self.column_angle = column_snapped;
         self.beam_angle = beam_snapped;
-        self.current_position.x = x;
-        self.current_position.y = y;
+
+        let (current_x, current_y) = self.get_current_position();
+
+        self.current_position.x = current_x;
+        self.current_position.y = current_y;
 
         Ok(())
     }
@@ -237,5 +247,15 @@ impl Driver {
         }
 
         return times;
+    }
+
+    pub fn get_current_position(&self) -> (f32, f32) {
+        let (x, y) = self.get_column_position();
+        let beam_angle = self.get_beam_angle();
+        let center = Point { x: x as f32, y: y as f32 };
+
+        let current_position = Calc::get_point(Calc::to_radian(beam_angle), &center);
+
+        return (current_position.x, current_position.y);
     }
 }
