@@ -52,13 +52,16 @@ impl Utils {
 }
 
 //I stole this shit from stackoverflow
-#[macro_export]
-macro_rules! tuple_into {
-    ($t: expr, ($($ty: ident), *)) => {
-        {
-            let ($($ty,)*) = $t
-            ($($ty as $tym,) *)
+pub mod Util_Macros {
+    macro_rules! tuple_into {
+        ($t: expr, ($($ty: ident), *)) => {
+            {
+                let ($($ty,)*) = $t;
+                ($($ty as $ty,) *)
+            }
         }
     }
+
+    pub(crate) use tuple_into;
 }
 
