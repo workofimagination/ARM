@@ -1,9 +1,0 @@
-needs
-    start, stop and pause gcode
-    move to position (x, y) for now
-    import gcode
-    zero button
-
-option
-    params / settings (ie speed) for robot
-
