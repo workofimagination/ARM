@@ -51,3 +51,13 @@ impl Utils {
     }
 }
 
+//I stole this shit from stackoverflow
+macro_rules! tuple_into {
+    ($t: expr, ($($ty: ident), *)) => {
+        {
+            let ($($ty,)*) = $t
+            ($($ty as $tym,) *)
+        }
+    }
+}
+
