@@ -63,11 +63,11 @@ impl Driver {
 
         let delay = Duration::from_micros(self.micro_delay_default as u64);
 
-        let goto_point = Point { x, y };
+        //let goto_point = Point { x, y };
 
-        if Calc::dist(&self.calc.origin, &goto_point) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
+        if Calc::dist(self.calc.origin.x, self.calc.origin.y, x, y) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
 
-        let (column_goto, beam_goto) = self.calc.get_angles(&goto_point);
+        let (column_goto, beam_goto) = self.calc.get_angles(x, y);
         let column_snapped = Calc::snap(Calc::to_degree(column_goto), self.step_degree);
         let beam_snapped = Calc::snap(Calc::to_degree(beam_goto), self.step_degree);
 
@@ -108,10 +108,10 @@ impl Driver {
     pub fn goto_point_smooth(&mut self, x: f32, y: f32) -> Result<(), DriverError>{
         let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
-        let goto_point = Point { x, y };
-        if Calc::dist(&self.calc.origin, &goto_point) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
+        //let goto_point = Point { x, y };
+        if Calc::dist(self.calc.origin.x, self.calc.origin.y, x, y) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
 
-        let (column_goto, beam_goto) = self.calc.get_angles(&goto_point);
+        let (column_goto, beam_goto) = self.calc.get_angles(x, y);
 
         let column_snapped = Calc::snap(Calc::to_degree(column_goto), self.step_degree);
         let beam_snapped = Calc::snap(Calc::to_degree(beam_goto), self.step_degree);
