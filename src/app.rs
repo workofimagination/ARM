@@ -1,6 +1,6 @@
 use crate::driver::{self, DriverError};
 use crate::driver::Driver;
-use crate::utils::{ShiftingVec, Utils};
+use crate::utils::{ShiftingVec, Utils, Util_Macros, self};
 
 use std::io::Stdout;
 use std::num::ParseFloatError;
@@ -491,8 +491,11 @@ impl App {
     }
 
     fn get_2d_points(&self) -> Vec<(f64, f64)>{
-        let column = self.driver.get_column_position();
-        let beam = self.driver.get_beam_position();
+        let (column_x, column_y) = self.driver.get_column_position();
+        let column = (column_x as f64, column_y as f64);
+
+        let (beam_x, beam_y) = self.driver.get_beam_position();
+        let beam = (beam_x as f64, beam_y as f64);
 
         return vec![(0.0,0.0), column, beam]
     }

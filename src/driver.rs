@@ -215,18 +215,18 @@ impl Driver {
         })
     }
 
-    pub fn get_column_position(&self) -> (f64, f64) {
+    pub fn get_column_position(&self) -> (f32, f32) {
         let column = Calc::get_point(Calc::to_radian(self.column_angle), &self.calc.origin);
 
-        return (column.x as f64, column.y as f64)
+        return (column.x, column.y)
     }
 
-    pub fn get_beam_position(&self) -> (f64, f64) {
+    pub fn get_beam_position(&self) -> (f32, f32) {
         let column = Calc::get_point(Calc::to_radian(self.column_angle), &self.calc.origin);
 
         let beam = Calc::get_point(Calc::to_radian(self.beam_angle), &column);
 
-        return (beam.x as f64, beam.y as f64)
+        return (beam.x, beam.y)
     } 
 
     pub fn get_beam_angle(&self) -> f32 {
