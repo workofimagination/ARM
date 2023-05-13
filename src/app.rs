@@ -32,13 +32,6 @@ enum Mode {
     Buffer
 }
 
-pub struct Point {
-    x: f32,
-    y: f32,
-    column_angle: f32,
-    beam_angle: f32
-}
-
 pub struct AngleSet {
     column_angle: f32,
     beam_angle: f32,
@@ -46,7 +39,7 @@ pub struct AngleSet {
 }
 
 pub struct App {
-    prev_positions: ShiftingVec<Point>,
+    prev_positions: ShiftingVec<AngleSet>,
     command_output: ShiftingVec<String>,
     current_mode: Mode,
     buffer: String,
@@ -55,7 +48,7 @@ pub struct App {
 
 impl App {
     pub fn make() -> App {
-        let prev_positions = ShiftingVec::<Point>::initalize(12);
+        let prev_positions = ShiftingVec::<AngleSet>::initalize(12);
         let command_output = ShiftingVec::<String>::initalize(12);
         let current_mode = Mode::Safe;
         let buffer = String::from("");
@@ -345,14 +338,14 @@ impl App {
 
     //END OF MAKE FUNCTIONS
 
-    fn gen_random_point() -> Point {
+    fn gen_random_point() -> AngleSet {
         let mut rng = rand::thread_rng();
         let x = rng.gen_range(1.0..3.0);
         let y = rng.gen_range(1.0..3.0);
         let column_angle = rng.gen_range(1.0..3.0);
         let beam_angle = rng.gen_range(1.0..3.0);
 
-        return Point { x, y, column_angle, beam_angle }
+        return AngleSet { column_angle, beam_angle, rotation_angle: 0.0 }
     }
 
     fn add_random_point(&mut self) {
@@ -361,11 +354,10 @@ impl App {
     }
 
     fn add_current_position(&mut self) {
-        let current_point = self.driver.current_position.clone();
         let beam_angle = self.driver.get_beam_angle();
         let column_angle = self.driver.get_column_angle();
 
-        let current_position = Point { x: current_point.x, y: current_point.y, beam_angle, column_angle };
+        let current_position = AngleSet {beam_angle, column_angle, rotation_angle: 0.0 };
 
         self.prev_positions.insert(current_position);
     }
