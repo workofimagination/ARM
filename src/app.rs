@@ -542,6 +542,7 @@ impl App {
         let (column_x, column_y) = self.driver.get_column_position();
 
         let text = vec![
+            App::make_info_span(String::from("DELAY: "), format!("{}", self.driver.micro_delay_default)),
             App::make_info_span(String::from("MAX DELAY: "), format!("{}", self.driver.micro_delay_max)),
             App::make_info_span(String::from("MIN DELAY: "), format!("{}", self.driver.micro_delay_min)),
             App::make_info_span(String::from("MVNT AMT: "), format!("{}", self.driver.movement_amount)),

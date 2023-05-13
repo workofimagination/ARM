@@ -46,15 +46,17 @@ impl Calc {
 
         let theta_two = f32::atan(change_y2/change_x2) + (PI*is_third as f32);
 
-        return (Calc::format_angles(theta_one), Calc::format_angles(theta_two));
+        return (theta_one, theta_two);
     }
 
-    fn format_angles(angle: f32) -> f32 {
-        if angle > PI {
-            return angle-(2.0*PI);
-        }
+    pub fn get_angles_3d(&self, x: f32, y: f32, z: f32) -> (f32, f32, f32) {
+        let theta = f32::atan(z/x);
 
-        return angle;
+        let x_prime = x*f32::cos(-theta) + z*f32::sin(-theta);
+
+        let (theta_column, theta_beam) = self.get_angles(&Point { x: x_prime, y });
+
+        return (theta, theta_column, theta_beam)
     }
 
     pub fn to_degree(angle: f32) -> f32 {
@@ -104,8 +106,8 @@ impl Calc {
             new[i] = Calc::normalize(*min, max, start, end, input[i]);
         }
 
-        return Some(new);
 
+        return Some(new);
     }
 
 
