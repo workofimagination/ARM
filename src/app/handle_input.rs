@@ -17,8 +17,12 @@ impl App {
                 event => match self.current_mode {
                     Mode::Normal => match event {
                         KeyCode::Esc => {
-                            self.current_mode = Mode::Safe 
+                            self.current_mode = Mode::Normal 
                         },
+
+                        KeyCode::Char('c') => { self.current_mode = Mode::Control }
+
+                        KeyCode::Char(':') => { self.current_mode = Mode::Buffer }
 
                         KeyCode::Char('q') => {
                             disable_raw_mode().unwrap();
@@ -48,25 +52,8 @@ impl App {
                         _ => {}
                     },
 
-                    Mode::Safe => match event {
-                        KeyCode::Char('q') => {
-                            disable_raw_mode().unwrap();
-                            terminal.show_cursor().unwrap();
-                            self.save_current_angles();
-                            std::process::exit(0);
-                        },
-
-                        KeyCode::Char('n') => { self.current_mode = Mode::Normal },
-
-                        KeyCode::Char('c') => { self.current_mode = Mode::Control }
-
-                        KeyCode::Char(':') => { self.current_mode = Mode::Buffer }
-
-                        _ => {}
-                    },
-
                     Mode::Control => match event {
-                        KeyCode::Esc => { self.current_mode = Mode::Safe },
+                        KeyCode::Esc => { self.current_mode = Mode::Normal},
 
                         KeyCode::Left => { self.move_direction(driver::Direction::Left); },
 
@@ -101,11 +88,11 @@ impl App {
 
                     Mode::Buffer => match event {
                         KeyCode::Esc => {
-                            self.current_mode = Mode::Safe
+                            self.current_mode = Mode::Normal;
                         },
 
                         KeyCode::Enter => {
-                            self.current_mode = Mode::Safe
+                            self.current_mode = Mode::Normal;
                         }
 
                         KeyCode::Char(c) => {

@@ -24,7 +24,6 @@ pub enum Event<I> {
 
 pub enum Mode {
     Normal,
-    Safe,
     Control,
     Buffer
 }
@@ -58,7 +57,7 @@ impl App {
         let command_output = ShiftingVec::<String>::initalize(shifting_vec_size, default_output);
         let command_output_size = 10;
 
-        let current_mode = Mode::Safe;
+        let current_mode = Mode::Normal;
         let buffer = String::from("");
         let driver = Driver::new();
 
@@ -133,8 +132,8 @@ impl App {
                     .margin(0)
                     .constraints(
                         [
-                            Constraint::Percentage(30),
-                            Constraint::Percentage(70),
+                            Constraint::Percentage(40),
+                            Constraint::Percentage(60),
                         ]
                         .as_ref()
                     )

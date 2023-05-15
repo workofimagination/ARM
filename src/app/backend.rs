@@ -30,6 +30,13 @@ impl App {
         self.prev_positions.insert(current_position);
     }
 
+    pub fn get_current_position(&mut self) -> AngleSet {
+        let beam_angle = self.driver.get_beam_angle();
+        let column_angle = self.driver.get_column_angle();
+
+        return AngleSet {beam_angle, column_angle, rotation_angle: 0.0 };
+    }
+
     pub fn move_direction(&mut self, dir: driver::Direction) {
         match self.driver.move_direction(dir) {
             Ok(()) => (),
@@ -65,10 +72,13 @@ impl App {
 
         self.command_output.insert(format!("successfully parsed buffer"));
 
-        self.add_current_position();
+        let current_poistion = self.get_current_position();
 
         match self.driver.goto_point(x, y) {
-            Ok(()) => self.command_output.insert(format!("successfully wennt to point {} {}", x, y)),
+            Ok(()) => {
+                self.command_output.insert(format!("successfully wennt to point {} {}", x, y));
+                self.prev_positions.insert(current_poistion);
+            },
             Err(e) => { self.handle_driver_error_generic(e) }
         }
     }
@@ -92,7 +102,6 @@ impl App {
     pub fn get_current_mode_string(&self) -> &str {
         let string = match self.current_mode {
             Mode::Normal => { "Normal" },
-            Mode::Safe => { "Safe" },
             Mode::Control => { "Control" },
             Mode::Buffer => { "Buffer" }
         };
