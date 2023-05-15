@@ -1,7 +1,7 @@
 use crate::App::{App, AngleSet, Mode};
 
 use crate::driver::{self, DriverError};
-use crate::utils::Utils;
+use crate::utils::{Utils, ShiftingVec};
 
 use std::num::ParseFloatError;
 
@@ -196,6 +196,42 @@ impl App {
     pub fn flush_command_output(&mut self) {
         let empty = String::from("");
         self.command_output.set_all(empty);
+    }
+
+    pub fn set_shifting_vec_size<T>(size: usize, vec: &mut ShiftingVec<T>) where T: Clone {
+        vec.set_size(size);
+    }
+
+    pub fn increase_prev_points(&mut self) {
+        self.prev_positions_size += 1;
+
+        App::set_shifting_vec_size(self.prev_positions_size, &mut self.prev_positions);
+    }
+
+    pub fn decrease_prev_points(&mut self) {
+        if self.prev_positions_size == 1 {
+            return 
+        }
+
+        self.prev_positions_size -= 1;
+
+        App::set_shifting_vec_size(self.prev_positions_size, &mut self.prev_positions)
+    }
+
+    pub fn increase_command_ouput(&mut self) {
+        self.command_output_size += 1;
+
+        App::set_shifting_vec_size(self.command_output_size, &mut self.command_output);
+    }
+
+    pub fn decrease_command_output(&mut self) {
+        if self.command_output_size == 1 {
+            return 
+        }
+
+        self.command_output_size -= 1;
+
+        App::set_shifting_vec_size(self.command_output_size, &mut self.command_output)
     }
 }
 

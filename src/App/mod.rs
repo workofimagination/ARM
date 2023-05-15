@@ -48,7 +48,9 @@ pub struct AngleSet {
 
 pub struct App {
     prev_positions: ShiftingVec<AngleSet>,
+    prev_positions_size: usize,
     command_output: ShiftingVec<String>,
+    command_output_size: usize,
     current_mode: Mode,
     buffer: String,
     driver: Driver,
@@ -56,13 +58,21 @@ pub struct App {
 
 impl App {
     pub fn make() -> App {
-        let prev_positions = ShiftingVec::<AngleSet>::initalize(10);
-        let command_output = ShiftingVec::<String>::initalize(10);
+        let shifting_vec_size = 10;
+
+        let default_angleset = AngleSet { column_angle: 0.0, beam_angle: 0.0, rotation_angle: 0.0 };
+        let prev_positions = ShiftingVec::<AngleSet>::initalize(shifting_vec_size, default_angleset);
+        let prev_positions_size = 10;
+
+        let default_output = String::from("");
+        let command_output = ShiftingVec::<String>::initalize(shifting_vec_size, default_output);
+        let command_output_size = 10;
+
         let current_mode = Mode::Safe;
         let buffer = String::from("");
         let driver = Driver::new();
 
-        return App { prev_positions, command_output, current_mode, buffer, driver }
+        return App { prev_positions, command_output, current_mode, buffer, driver, prev_positions_size, command_output_size }
 
     }
 

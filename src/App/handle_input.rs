@@ -36,7 +36,15 @@ impl App {
 
                         KeyCode::Char('p') => { self.flush_prev_positions(); },
 
-                        KeyCode::Char('c') => { self.flush_command_output(); }
+                        KeyCode::Char('c') => { self.flush_command_output(); },
+
+                        KeyCode::Char('=') => { self.increase_prev_points(); },
+
+                        KeyCode::Char('-') => { self.decrease_prev_points(); },
+
+                        KeyCode::Char(']') => { self.increase_command_ouput(); },
+
+                        KeyCode::Char('[') => { self.decrease_command_output(); }
 
                         _ => {}
                     },
