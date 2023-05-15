@@ -166,14 +166,26 @@ impl App {
     }
 
     pub fn decrease_max_delay(&mut self) {
+        if self.driver.micro_delay_max <= 10 || self.driver.micro_delay_max <= self.driver.micro_delay_min + 10 {
+            return
+        }
+
         self.driver.micro_delay_max -= 10;
     }
 
     pub fn increase_min_delay(&mut self) {
+        if self.driver.micro_delay_min >= self.driver.micro_delay_max - 10 {
+            return
+        }
+
         self.driver.micro_delay_min += 10;
     }
 
     pub fn decrease_min_delay(&mut self) {
+        if self.driver.micro_delay_min <= 10 {
+            return
+        }
+
         self.driver.micro_delay_min -= 10;
     }
 
@@ -182,17 +194,19 @@ impl App {
     }
 
     pub fn decrease_delay(&mut self) {
+        if self.driver.micro_delay_default <= 10 {
+            return
+        }
+
         self.driver.micro_delay_default -= 10;
     }
 
     pub fn flush_prev_positions(&mut self) {
-        let zero_angle = AngleSet { beam_angle: 0.0, column_angle: 0.0, rotation_angle: 0.0 };
-        self.prev_positions.set_all(zero_angle);
+        self.prev_positions.flush();
     }
 
     pub fn flush_command_output(&mut self) {
-        let empty = String::from("");
-        self.command_output.set_all(empty);
+        self.command_output.flush();
     }
 
     pub fn set_shifting_vec_size<T>(size: usize, vec: &mut ShiftingVec<T>) where T: Clone {

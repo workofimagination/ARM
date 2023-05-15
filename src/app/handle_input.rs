@@ -39,7 +39,7 @@ impl App {
 
                         KeyCode::Char('p') => { self.flush_prev_positions(); },
 
-                        KeyCode::Char('c') => { self.flush_command_output(); },
+                        KeyCode::Char('f') => { self.flush_command_output(); },
 
                         KeyCode::Char('=') => { self.increase_prev_points(); },
 
@@ -114,7 +114,6 @@ impl App {
 
             Event::Tick => {}
         }
-
     }
 
     pub fn handle_driver_error_generic(&mut self, error: DriverError) {
