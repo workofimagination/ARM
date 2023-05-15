@@ -32,6 +32,7 @@ enum Mode {
     Buffer
 }
 
+#[derive(Clone)]
 pub struct AngleSet {
     column_angle: f32,
     beam_angle: f32,
@@ -48,8 +49,8 @@ pub struct App {
 
 impl App {
     pub fn make() -> App {
-        let prev_positions = ShiftingVec::<AngleSet>::initalize(12);
-        let command_output = ShiftingVec::<String>::initalize(12);
+        let mut prev_positions = ShiftingVec::<AngleSet>::initalize(10);
+        let command_output = ShiftingVec::<String>::initalize(10);
         let current_mode = Mode::Safe;
         let buffer = String::from("");
         let driver = Driver::new();
@@ -59,6 +60,8 @@ impl App {
     }
 
     pub fn start(&mut self) {
+        self.flush_prev_positions();
+
         enable_raw_mode().expect("cannot run in raw mode");
 
         let (tx, rx) = mpsc::channel();
@@ -268,7 +271,7 @@ impl App {
     }
 
     fn make_previous_points(&mut self) -> (List, &mut ListState) {
-        let items: Vec<ListItem> = self.prev_positions.get_items()
+       let items: Vec<ListItem> = self.prev_positions.get_items()
             .iter()
             .map(|i| {
                 let content = Spans::from(Span::styled(
@@ -340,8 +343,6 @@ impl App {
 
     fn gen_random_point() -> AngleSet {
         let mut rng = rand::thread_rng();
-        let x = rng.gen_range(1.0..3.0);
-        let y = rng.gen_range(1.0..3.0);
         let column_angle = rng.gen_range(1.0..3.0);
         let beam_angle = rng.gen_range(1.0..3.0);
 
@@ -550,6 +551,16 @@ impl App {
         return text
     }
 
+    fn flush_prev_positions(&mut self) {
+        let zero_angle = AngleSet { beam_angle: 0.0, column_angle: 0.0, rotation_angle: 0.0 };
+        self.prev_positions.set_all(zero_angle);
+    }
+
+    fn flush_command_output(&mut self) {
+        let empty = String::from("");
+        self.command_output.set_all(empty);
+    }
+
     fn handle_input(&mut self, rx: &Receiver<Event<KeyEvent>>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) {
         match rx.recv().unwrap() {
             Event::Input(event) => match event.code {
@@ -566,17 +577,15 @@ impl App {
                             std::process::exit(0)
                         },
 
-                        KeyCode::Char('d') => {
-                            dbg!(self.get_2d_points());
-                        }
+                        KeyCode::Char('d') => { dbg!(self.get_2d_points()); }
 
-                        KeyCode::Char('a') => {
-                            self.add_random_point();
-                        },
+                        KeyCode::Char('a') => { self.add_random_point(); },
 
-                        KeyCode::Char('s') => {
-                            self.save_current_angles();
-                        },
+                        KeyCode::Char('s') => { self.save_current_angles(); },
+
+                        KeyCode::Char('p') => { self.flush_prev_positions(); },
+
+                        KeyCode::Char('c') => { self.flush_command_output(); }
 
                         _ => {}
                     },
@@ -589,17 +598,11 @@ impl App {
                             std::process::exit(0);
                         },
 
-                        KeyCode::Char('n') => {
-                            self.current_mode = Mode::Normal 
-                        },
+                        KeyCode::Char('n') => { self.current_mode = Mode::Normal },
 
-                        KeyCode::Char('c') => {
-                            self.current_mode = Mode::Control
-                        }
+                        KeyCode::Char('c') => { self.current_mode = Mode::Control }
 
-                        KeyCode::Char(':') => {
-                            self.current_mode = Mode::Buffer
-                        }
+                        KeyCode::Char(':') => { self.current_mode = Mode::Buffer }
 
                         _ => {}
                     },

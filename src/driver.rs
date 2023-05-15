@@ -93,7 +93,6 @@ impl Driver {
             }
         }
 
-
         self.column_angle = column_snapped;
         self.beam_angle = beam_snapped;
 
@@ -108,7 +107,6 @@ impl Driver {
     pub fn goto_point_smooth(&mut self, x: f32, y: f32) -> Result<(), DriverError>{
         let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
-        //let goto_point = Point { x, y };
         if Calc::dist(self.calc.origin.x, self.calc.origin.y, x, y) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
 
         let (column_goto, beam_goto) = self.calc.get_angles(x, y);
