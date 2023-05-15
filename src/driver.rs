@@ -21,7 +21,8 @@ pub struct Driver {
 
 #[derive(Debug)]
 pub enum DriverError {
-    UnReachable
+    UnReachable,
+    CantNormalize
 }
 
 pub enum Direction {
@@ -42,7 +43,7 @@ impl Driver {
         let micro_delay_default = 0;
         let micro_delay_min = 500;
         let micro_delay_max = 1000;
-        let current_position = Point { x: 0.0, y: 2.0 };
+        let current_position = Point { x: 2.0, y: 0.0 };
         let calc = Calc::new(0.0, 0.0, 1.0);
 
         return Driver { column_motor, beam_motor, column_angle, beam_angle, step_degree, movement_amount,
@@ -60,10 +61,6 @@ impl Driver {
 
     pub fn goto_point(&mut self, x: f32, y: f32) -> Result<(), DriverError>{
         let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
-
-        let delay = Duration::from_micros(self.micro_delay_default as u64);
-
-        //let goto_point = Point { x, y };
 
         if Calc::dist(self.calc.origin.x, self.calc.origin.y, x, y) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
 
@@ -135,7 +132,7 @@ impl Driver {
                 thread_pool.push(thread);
             },
 
-            None => ()
+            None => { return Err(DriverError::CantNormalize) }
         };
 
         match Calc::normalize_vec(self.micro_delay_min, self.micro_delay_max, beam_smoothed) {
@@ -144,7 +141,7 @@ impl Driver {
                 thread_pool.push(thread);
             },
 
-            None => ()
+            None => { return Err(DriverError::CantNormalize) }
         };
 
         for thread in thread_pool {

@@ -1,6 +1,5 @@
-use crate::App::App;
-use crate::App::{Mode, Event};
-use crate::driver;
+use crate::app::{App, Mode, Event};
+use crate::driver::{self, DriverError};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use crossterm::terminal::disable_raw_mode;
@@ -69,7 +68,7 @@ impl App {
                     Mode::Control => match event {
                         KeyCode::Esc => { self.current_mode = Mode::Safe },
 
-                        KeyCode::Left => { self.move_direction(driver::Direction::Left) },
+                        KeyCode::Left => { self.move_direction(driver::Direction::Left); },
 
                         KeyCode::Right => { self.move_direction(driver::Direction::Right); },
 
@@ -129,5 +128,19 @@ impl App {
             Event::Tick => {}
         }
 
+    }
+
+    pub fn handle_driver_error_generic(&mut self, error: DriverError) {
+        match error {
+            DriverError::UnReachable => {
+                let error_message = String::from("unable to reach target position, out of range");
+                self.command_output.insert(error_message);
+            },
+            
+            DriverError::CantNormalize => {
+                let error_message = String::from("unable to normalize derived smooth, most likely a divide by zero issue");
+                self.command_output.insert(error_message);
+            }
+        }
     }
 }

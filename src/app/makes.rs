@@ -1,4 +1,4 @@
-use crate::App::App;
+use crate::app::App;
 
 use tui::symbols;
 use tui::style::Style;

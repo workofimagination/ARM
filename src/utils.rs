@@ -1,4 +1,4 @@
-use crate::App::AngleSet;
+use crate::app::AngleSet;
 
 use std::fs::File;
 use std::io::Write;

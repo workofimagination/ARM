@@ -1,6 +1,6 @@
-use crate::App::{App, AngleSet, Mode};
+use crate::app::{App, AngleSet, Mode};
 
-use crate::driver::{self, DriverError};
+use crate::driver;
 use crate::utils::{Utils, ShiftingVec};
 
 use std::num::ParseFloatError;
@@ -33,12 +33,7 @@ impl App {
     pub fn move_direction(&mut self, dir: driver::Direction) {
         match self.driver.move_direction(dir) {
             Ok(()) => (),
-            Err(e) => match e {
-                DriverError::UnReachable => {
-                    let error_message = String::from("unable to reach position");
-                    self.command_output.insert(error_message);
-                }
-            }
+            Err(e) => { self.handle_driver_error_generic(e) }
         }
     }
 
@@ -55,12 +50,7 @@ impl App {
         
         match self.driver.goto_point_smooth(x, y) {
             Ok(()) => (),
-            Err(e) => match e {
-                DriverError::UnReachable => {
-                    self.command_output.insert(format!("unable to reach location"));
-                    return
-                }
-            }
+            Err(e) => { self.handle_driver_error_generic(e) }
         }
     }
 
@@ -79,9 +69,7 @@ impl App {
 
         match self.driver.goto_point(x, y) {
             Ok(()) => self.command_output.insert(format!("successfully wennt to point {} {}", x, y)),
-            Err(e) => match e {
-                DriverError::UnReachable => self.command_output.insert(format!("out of range"))
-            }
+            Err(e) => { self.handle_driver_error_generic(e) }
         }
     }
 
