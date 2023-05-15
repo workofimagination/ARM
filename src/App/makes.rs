@@ -114,6 +114,7 @@ impl App {
                     .borders(Borders::ALL)
             );
 
+
         return (command_items, self.prev_positions.get_state())
     }
 

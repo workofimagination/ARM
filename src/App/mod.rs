@@ -2,30 +2,20 @@ mod handle_input;
 mod makes;
 mod backend;
 
-use crate::driver::{self, DriverError};
 use crate::driver::Driver;
-use crate::utils::{ShiftingVec, Utils, Util_Macros, self};
+use crate::utils::ShiftingVec;
 
-use crossterm::event::{self, KeyCode, KeyEvent};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use std::sync::mpsc::Receiver;
+use crossterm::event;
+use crossterm::terminal::enable_raw_mode;
 
-use std::io::Stdout;
-
-
-use std::num::ParseFloatError;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use rand::Rng;
 
-use tui::{Terminal, symbols};
+use tui::Terminal;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Layout, Direction, Constraint};
-use tui::style::Style;
-use tui::text::{Span, Spans};
-use tui::widgets::{Paragraph, Block, Borders, ListItem, List, Dataset, Chart, Axis, GraphType, ListState};
 
 pub enum Event<I> {
     Input(I),
@@ -73,7 +63,6 @@ impl App {
         let driver = Driver::new();
 
         return App { prev_positions, command_output, current_mode, buffer, driver, prev_positions_size, command_output_size }
-
     }
 
     pub fn start(&mut self) {

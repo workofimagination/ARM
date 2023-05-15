@@ -15,12 +15,11 @@ pub struct ShiftingVec<T> where T: Clone {
 
 impl<T> ShiftingVec<T> where T: Clone {
     pub fn initalize(size: usize, default_value: T) -> ShiftingVec<T> {
-        let mut items: Vec<T> = Vec::with_capacity(size);
+        let mut items: Vec<T> = Vec::new();
 
-        //this is actually safe don't worry about it promise :)
-        //correction - this causes weird behavour
-
-        unsafe { items.set_len(size); }
+        for _ in 0..size {
+            items.push(default_value.clone());
+        }
 
         let state = ListState::default();
 
