@@ -69,7 +69,6 @@ impl<T> ShiftingVec<T> where T: Clone {
     pub fn get_state(&mut self) -> &mut ListState {
         return &mut self.state;
     }
-
 }
 
 pub struct Utils;
@@ -87,4 +86,3 @@ impl Utils {
         }
     }
 }
-
