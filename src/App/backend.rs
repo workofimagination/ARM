@@ -1,0 +1,201 @@
+use crate::App::{App, AngleSet, Mode};
+
+use crate::driver::{self, DriverError};
+use crate::utils::Utils;
+
+use std::num::ParseFloatError;
+
+use rand::Rng;
+
+impl App {
+    pub fn gen_random_point() -> AngleSet {
+        let mut rng = rand::thread_rng();
+        let column_angle = rng.gen_range(1.0..3.0);
+        let beam_angle = rng.gen_range(1.0..3.0);
+
+        return AngleSet { column_angle, beam_angle, rotation_angle: 0.0 }
+    }
+
+    pub fn add_random_point(&mut self) {
+        let rand = App::gen_random_point();
+        self.prev_positions.insert(rand);
+    }
+
+    pub fn add_current_position(&mut self) {
+        let beam_angle = self.driver.get_beam_angle();
+        let column_angle = self.driver.get_column_angle();
+
+        let current_position = AngleSet {beam_angle, column_angle, rotation_angle: 0.0 };
+
+        self.prev_positions.insert(current_position);
+    }
+
+    pub fn move_direction(&mut self, dir: driver::Direction) {
+        match self.driver.move_direction(dir) {
+            Ok(()) => (),
+            Err(e) => match e {
+                DriverError::UnReachable => {
+                    let error_message = String::from("unable to reach position");
+                    self.command_output.insert(error_message);
+                }
+            }
+        }
+    }
+
+    pub fn goto_smooth(&mut self) {
+        let (x, y) = match self.parse_buffer_goto() {
+            Ok(x) => x,
+            Err(e) => {
+                self.command_output.insert(format!("{}", e));
+                return
+            }
+        };
+
+        self.add_current_position();
+        
+        match self.driver.goto_point_smooth(x, y) {
+            Ok(()) => (),
+            Err(e) => match e {
+                DriverError::UnReachable => {
+                    self.command_output.insert(format!("unable to reach location"));
+                    return
+                }
+            }
+        }
+    }
+
+    pub fn goto(&mut self) {
+        let (x, y) = match self.parse_buffer_goto() {
+            Ok(x) => x,
+            Err(e) => {
+                self.command_output.insert(format!("{}", e));
+                return
+            }
+        };
+
+        self.command_output.insert(format!("successfully parsed buffer"));
+
+        self.add_current_position();
+
+        match self.driver.goto_point(x, y) {
+            Ok(()) => self.command_output.insert(format!("successfully wennt to point {} {}", x, y)),
+            Err(e) => match e {
+                DriverError::UnReachable => self.command_output.insert(format!("out of range"))
+            }
+        }
+    }
+
+    pub fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {
+        let coords = self.buffer.split("-").collect::<Vec<&str>>();
+
+        let x = match coords[0].parse::<f32>() {
+            Ok(x) => x,
+            Err(e) => return Err(e)
+        };
+
+        let y = match coords[1].parse::<f32>() {
+            Ok(y) => y,
+            Err(e) => return Err(e)
+        };
+
+        Ok((x, y))
+    }
+
+    pub fn get_current_mode_string(&self) -> &str {
+        let string = match self.current_mode {
+            Mode::Normal => { "Normal" },
+            Mode::Safe => { "Safe" },
+            Mode::Control => { "Control" },
+            Mode::Buffer => { "Buffer" }
+        };
+
+        return string
+    } 
+
+    pub fn get_current_x(&self) -> f32 {
+        return self.driver.current_position.x
+    }
+
+    pub fn get_current_y(&self) -> f32 {
+        return self.driver.current_position.y
+    }
+
+    pub fn get_current_column_angle(&self) -> f32 {
+        return self.driver.get_column_angle()
+    }
+
+    pub fn get_current_beam_angle(&self) -> f32 {
+        return self.driver.get_beam_angle()
+    }
+
+    pub fn save_current_angles(&mut self) {
+        let current_angles = self.get_current_angle_set();
+
+        let save_string = format!("{} {} {}", current_angles.column_angle, current_angles.beam_angle, current_angles.rotation_angle);
+
+        match Utils::save_to_file("./output".to_string(), save_string) {
+            Ok(x) => self.command_output.insert(x),
+            Err(e) => self.command_output.insert(format!("unable to save to file: {}", e))
+        }
+    }
+
+    pub fn get_current_angle_set(&self) ->  AngleSet {
+        let beam_angle = self.get_current_beam_angle();
+        let column_angle = self.get_current_column_angle();
+
+        return AngleSet { column_angle, beam_angle, rotation_angle: 0.0 }
+    }
+
+    pub fn get_2d_points(&self) -> Vec<(f64, f64)>{
+        let (column_x, column_y) = self.driver.get_column_position();
+        let column = (column_x as f64, column_y as f64);
+
+        let (beam_x, beam_y) = self.driver.get_beam_position();
+        let beam = (beam_x as f64, beam_y as f64);
+
+        return vec![(0.0,0.0), column, beam]
+    }
+
+    pub fn increase_movement_amount(&mut self) {
+        self.driver.movement_amount *= 1.25;
+    }
+
+    pub fn decrease_movement_amount(&mut self) {
+        self.driver.movement_amount /= 1.25;
+    }
+
+    pub fn increase_max_delay(&mut self) {
+        self.driver.micro_delay_max += 10;
+    }
+
+    pub fn decrease_max_delay(&mut self) {
+        self.driver.micro_delay_max -= 10;
+    }
+
+    pub fn increase_min_delay(&mut self) {
+        self.driver.micro_delay_min += 10;
+    }
+
+    pub fn decrease_min_delay(&mut self) {
+        self.driver.micro_delay_min -= 10;
+    }
+
+    pub fn increase_delay(&mut self) {
+        self.driver.micro_delay_default += 10;
+    }
+
+    pub fn decrease_delay(&mut self) {
+        self.driver.micro_delay_default -= 10;
+    }
+
+    pub fn flush_prev_positions(&mut self) {
+        let zero_angle = AngleSet { beam_angle: 0.0, column_angle: 0.0, rotation_angle: 0.0 };
+        self.prev_positions.set_all(zero_angle);
+    }
+
+    pub fn flush_command_output(&mut self) {
+        let empty = String::from("");
+        self.command_output.set_all(empty);
+    }
+}
+

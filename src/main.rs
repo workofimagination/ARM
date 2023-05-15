@@ -1,13 +1,12 @@
 mod utils;
 mod driver;
 mod calc;
-mod app;
+mod App;
 mod stepper;
 use calc::{Calc, Point};
-use app::App;
 
 fn main() {
-    let mut main = App::make();
+    let mut main = App::App::make();
 
     main.start();
 
