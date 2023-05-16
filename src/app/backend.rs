@@ -10,15 +10,18 @@ use rand::Rng;
 impl App {
     pub fn gen_random_point() -> AngleSet {
         let mut rng = rand::thread_rng();
-        let column_angle = rng.gen_range(1.0..3.0);
-        let beam_angle = rng.gen_range(1.0..3.0);
+        let column_angle = rng.gen_range(1.0..2.0);
+        let beam_angle = rng.gen_range(1.0..2.0);
 
         return AngleSet { column_angle, beam_angle, rotation_angle: 0.0 }
     }
 
     pub fn add_random_point(&mut self) {
+        //these are between 1 and 2, not actual angles I have no idea why these are still here
+        //but im keeping them in for testing purposes
         let rand = App::gen_random_point();
-        self.prev_positions.insert(rand);
+        self.buffer = format!("{} {}", rand.column_angle, rand.beam_angle);
+        self.goto();
     }
 
     pub fn add_current_position(&mut self) {
@@ -84,7 +87,7 @@ impl App {
     }
 
     pub fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {
-        let coords = self.buffer.split("-").collect::<Vec<&str>>();
+        let coords = self.buffer.split(" ").collect::<Vec<&str>>();
 
         let x = match coords[0].parse::<f32>() {
             Ok(x) => x,
