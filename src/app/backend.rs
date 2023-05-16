@@ -7,11 +7,12 @@ use std::num::ParseFloatError;
 
 use rand::Rng;
 
+
 impl App {
     pub fn gen_random_point() -> AngleSet {
         let mut rng = rand::thread_rng();
-        let column_angle = rng.gen_range(1.0..2.0);
-        let beam_angle = rng.gen_range(1.0..2.0);
+        let column_angle = rng.gen_range(0.1..2.0);
+        let beam_angle = rng.gen_range(-1.0..2.0);
 
         return AngleSet { column_angle, beam_angle, rotation_angle: 0.0 }
     }
@@ -19,6 +20,7 @@ impl App {
     pub fn add_random_point(&mut self) {
         //these are between 1 and 2, not actual angles I have no idea why these are still here
         //but im keeping them in for testing purposes
+
         let rand = App::gen_random_point();
         self.buffer = format!("{} {}", rand.column_angle, rand.beam_angle);
         self.goto();
@@ -82,6 +84,7 @@ impl App {
                 self.command_output.insert(format!("successfully wennt to point {} {}", x, y));
                 self.prev_positions.insert(current_poistion);
             },
+
             Err(e) => { self.handle_driver_error_generic(e) }
         }
     }

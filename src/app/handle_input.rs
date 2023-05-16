@@ -11,29 +11,29 @@ use tui::backend::CrosstermBackend;
 use tui::Terminal;
 
 impl App {
-    pub fn handle_input(&mut self, rx: &Receiver<Event<KeyEvent>>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) {
-        match rx.recv().unwrap() {
-            Event::Input(event) => match event.code {
-                event => match self.current_mode {
-                    Mode::Normal => match event {
-                        KeyCode::Esc => {
-                            self.current_mode = Mode::Normal 
-                        },
+pub fn handle_input(&mut self, rx: &Receiver<Event<KeyEvent>>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) {
+    match rx.recv().unwrap() {
+        Event::Input(event) => match event.code {
+            event => match self.current_mode {
+                Mode::Normal => match event {
+                    KeyCode::Esc => {
+                        self.current_mode = Mode::Normal 
+                    },
 
-                        KeyCode::Char('c') => { self.current_mode = Mode::Control }
+                    KeyCode::Char('c') => { self.current_mode = Mode::Control }
 
-                        KeyCode::Char(':') => { self.current_mode = Mode::Buffer }
+                    KeyCode::Char(':') => { self.current_mode = Mode::Buffer }
 
-                        KeyCode::Char('q') => {
-                            disable_raw_mode().unwrap();
-                            terminal.show_cursor().unwrap();
-                            self.save_current_angles();
-                            std::process::exit(0)
-                        },
+                    KeyCode::Char('q') => {
+                        disable_raw_mode().unwrap();
+                        terminal.show_cursor().unwrap();
+                        self.save_current_angles();
+                        std::process::exit(0)
+                    },
 
-                        KeyCode::Char('d') => { dbg!(self.get_2d_points()); }
+                    KeyCode::Char('d') => { dbg!(self.get_2d_points()); }
 
-                        KeyCode::Char('a') => { self.add_random_point(); },
+                    KeyCode::Char('a') => { self.add_random_point(); },
 
                         KeyCode::Char('s') => { self.save_current_angles(); },
 
@@ -87,25 +87,15 @@ impl App {
                     },
 
                     Mode::Buffer => match event {
-                        KeyCode::Esc => {
-                            self.current_mode = Mode::Normal;
-                        },
+                        KeyCode::Esc => { self.current_mode = Mode::Normal; },
 
-                        KeyCode::Enter => {
-                            self.current_mode = Mode::Normal;
-                        }
+                        KeyCode::Enter => { self.current_mode = Mode::Normal; }
 
-                        KeyCode::Char(c) => {
-                            self.buffer.push(c);
-                        },
+                        KeyCode::Char(c) => { self.buffer.push(c); },
 
-                        KeyCode::Backspace => {
-                            self.buffer.pop();
-                        },
+                        KeyCode::Backspace => { self.buffer.pop(); },
 
-                        KeyCode::Delete => {
-                            self.buffer.clear();
-                        }
+                        KeyCode::Delete => { self.buffer.clear(); }
 
                         _ => {}
                     }
