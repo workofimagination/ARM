@@ -101,7 +101,7 @@ impl Calc {
         let max = input.iter().max().unwrap() + 1;
 
         for i in 0..input.len() {
-            new[i] = Calc::normalize(*min, max, start, end, input[i]);
+            new[i] = Calc::normalize(*min, max, end, start, input[i]); //TEMP CHANGED THIS TO PUT END AS START AND START AS END, FIX THE LATER
         }
 
 
