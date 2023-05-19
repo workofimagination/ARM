@@ -46,7 +46,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn make() -> App {
+    pub fn new() -> App {
         let shifting_vec_size = 10;
 
         let default_angleset = AngleSet { column_angle: 0.0, beam_angle: 0.0, rotation_angle: 0.0 };

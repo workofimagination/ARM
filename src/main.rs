@@ -5,7 +5,7 @@ mod app;
 mod stepper;
 
 fn main() {
-    let mut main = app::App::make();
+    let mut main = app::App::new();
 
     main.start();
 
