@@ -40,9 +40,9 @@ impl Driver {
         let beam_angle = 0.0;
         let step_degree = 1.0/4.0;
         let movement_amount = 0.01;
-        let micro_delay_default = 0;
-        let micro_delay_min = 500;
-        let micro_delay_max = 1000;
+        let micro_delay_default = 1750;
+        let micro_delay_min = 1750;
+        let micro_delay_max = 4000;
         let current_position = Point { x: 2.0, y: 0.0 };
         let calc = Calc::new(0.0, 0.0, 1.0);
 

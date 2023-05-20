@@ -44,7 +44,7 @@ impl App {
 
     pub fn move_direction(&mut self, dir: driver::Direction) {
         match self.driver.move_direction(dir) {
-            Ok(()) => (),
+            Ok(()) => (), 
             Err(e) => { self.handle_driver_error_generic(e) }
         }
     }
