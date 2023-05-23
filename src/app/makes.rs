@@ -1,5 +1,6 @@
 use crate::app::App;
 
+use tui::layout::{Direction, Constraint, Layout};
 use tui::symbols;
 use tui::style::Style;
 use tui::text::{Span, Spans};
@@ -19,7 +20,6 @@ impl App {
     }
 
     pub fn make_map<'a>(&'a mut self, data: &'a Vec<(f64, f64)>) -> Chart {
-        //let dataset = self.get_datasets();
         let dataset = vec![
             Dataset::default()
                 .marker(symbols::Marker::Braille)
@@ -157,6 +157,15 @@ impl App {
         ];
 
         return text
+    }
+
+    pub fn make_chunk(direction: Direction, constraints: Vec<Constraint>) -> Layout {
+        let chunk = Layout::default()
+            .direction(direction)
+            .margin(0)
+            .constraints(constraints.as_ref());
+
+        return chunk
     }
 
 }

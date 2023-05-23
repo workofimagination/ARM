@@ -105,79 +105,58 @@ impl App {
         loop {
             terminal.draw(|rect| {
                 let size = rect.size();
-                let chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .margin(0)
-                    .constraints(
-                        [
-                            Constraint::Length(3),
-                            Constraint::Min(0),
-                            Constraint::Length(3)
-                        ].as_ref()
-                    )
-                    .split(size);
-                
-                let top_chunks = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .margin(0)
-                    .constraints(
-                        [
-                            Constraint::Percentage(25),
-                            Constraint::Percentage(25),
-                            Constraint::Percentage(25),
-                            Constraint::Percentage(25)
-                        ]
-                        .as_ref()
-                    )
-                    .split(chunks[0]);
+                let chunks = App::make_chunk(
+                    Direction::Vertical,
+                    vec![
+                        Constraint::Length(3),
+                        Constraint::Min(0),
+                        Constraint::Length(3)
+                    ]
+                ).split(size);
 
-                let middle_chunks = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .margin(0)
-                    .constraints(
-                        [
-                            Constraint::Percentage(40),
-                            Constraint::Percentage(60),
-                        ]
-                        .as_ref()
-                    )
-                    .split(chunks[1]);
+                let top_chunks = App::make_chunk(
+                    Direction::Horizontal,
+                    vec![
+                        Constraint::Percentage(25),
+                        Constraint::Percentage(25),
+                        Constraint::Percentage(25),
+                        Constraint::Percentage(25)
+                    ]
+                ).split(chunks[0]);
 
-                let middle_left_chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .margin(0)
-                    .constraints(
-                        [
-                            Constraint::Percentage(50),
-                            Constraint::Percentage(50)
-                        ]
-                        .as_ref()
-                    )
-                    .split(middle_chunks[0]);
 
-                let top_middle_left_chunks = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .margin(0)
-                    .constraints(
-                        [
-                            Constraint::Percentage(50),
-                            Constraint::Percentage(50)
-                        ]
-                        .as_ref()
-                    )
-                    .split(middle_left_chunks[0]);
+                let middle_chunks = App::make_chunk(
+                    Direction::Horizontal,
+                    vec![
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(60),
 
-                let bottom_chunks = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .margin(0)
-                    .constraints(
-                        [
-                            Constraint::Percentage(20),
-                            Constraint::Percentage(80)
-                        ]
-                        .as_ref()
-                    )
-                    .split(chunks[2]);
+                    ]
+                ).split(chunks[1]);
+
+                let middle_left_chunks = App::make_chunk(
+                    Direction::Vertical, 
+                    vec![
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50)
+                    ]
+                ).split(middle_chunks[0]);
+
+                let top_middle_left_chunks = App::make_chunk(
+                    Direction::Horizontal,
+                    vec![
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50)
+                    ]
+                ).split(middle_left_chunks[0]);
+
+                let bottom_chunks = App::make_chunk(
+                    Direction::Horizontal,
+                    vec![
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(80)
+                    ]
+                ).split(chunks[2]);
 
                 let current_x = self.make_plain_paragraph(format!("Current X: {}", self.get_current_x()));
                 rect.render_widget(current_x, top_chunks[0]);

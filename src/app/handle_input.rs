@@ -106,17 +106,4 @@ pub fn handle_input(&mut self, rx: &Receiver<Event<KeyEvent>>, terminal: &mut Te
         }
     }
 
-    pub fn handle_driver_error_generic(&mut self, error: DriverError) {
-        match error {
-            DriverError::UnReachable => {
-                let error_message = String::from("unable to reach target position, out of range");
-                self.command_output.insert(error_message);
-            },
-            
-            DriverError::CantNormalize => {
-                let error_message = String::from("unable to normalize derived smooth, most likely a divide by zero issue");
-                self.command_output.insert(error_message);
-            }
-        }
-    }
 }

@@ -1,4 +1,5 @@
 use crate::app::{App, AngleSet, Mode};
+use crate::driver::DriverError;
 
 use crate::driver;
 use crate::utils::{Utils, ShiftingVec};
@@ -249,6 +250,20 @@ impl App {
         self.command_output_size -= 1;
 
         App::set_shifting_vec_size(self.command_output_size, &mut self.command_output)
+    }
+
+    pub fn handle_driver_error_generic(&mut self, error: DriverError) {
+        match error {
+            DriverError::UnReachable => {
+                let error_message = String::from("unable to reach target position, out of range");
+                self.command_output.insert(error_message);
+            },
+            
+            DriverError::CantNormalize => {
+                let error_message = String::from("unable to normalize derived smooth, most likely a divide by zero issue");
+                self.command_output.insert(error_message);
+            }
+        }
     }
 }
 
