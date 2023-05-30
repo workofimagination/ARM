@@ -4,6 +4,20 @@ use std::clone::Clone;
 
 use tui::widgets::ListState;
 
+#[derive(Clone)]
+pub struct Point {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32
+}
+
+#[derive(Clone)]
+pub struct AngleSet {
+    pub column_angle: f32,
+    pub beam_angle: f32,
+    pub base_angle: f32
+}
+
 pub struct ShiftingVec<T> where T: Clone {
     state: ListState,
     items: Vec<T>,

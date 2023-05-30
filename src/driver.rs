@@ -3,7 +3,8 @@ use std::time::Duration;
 use std::thread::{self, JoinHandle};
 use rand::Rng;
 use crate::stepper::TestStepper;
-use crate::calc::{Calc, Point};
+use crate::calc::Calc;
+use crate::utils::{ Point, AngleSet };
 
 pub struct Driver {
     pub column_motor: Arc<Mutex<TestStepper>>,
@@ -43,7 +44,7 @@ impl Driver {
         let micro_delay_default = 1750;
         let micro_delay_min = 1750;
         let micro_delay_max = 4000;
-        let current_position = Point { x: 2.0, y: 0.0 };
+        let current_position = Point { x: 2.0, y: 0.0, z: 0.0 };
         let calc = Calc::new(0.0, 0.0, 1.0);
 
         return Driver { column_motor, beam_motor, column_angle, beam_angle, step_degree, movement_amount,
@@ -64,7 +65,9 @@ impl Driver {
 
         if Calc::dist(self.calc.origin.x, self.calc.origin.y, x, y) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
 
-        let (column_goto, beam_goto) = self.calc.get_angles(x, y);
+        let angles = self.calc.get_angles(x, y);
+        let (column_goto, beam_goto) = (angles.column_angle, angles.beam_angle);
+
         let column_snapped = Calc::snap(Calc::to_degree(column_goto), self.step_degree);
         let beam_snapped = Calc::snap(Calc::to_degree(beam_goto), self.step_degree);
 
@@ -93,10 +96,10 @@ impl Driver {
         self.column_angle = column_snapped;
         self.beam_angle = beam_snapped;
 
-        let (current_x, current_y) = self.get_current_position();
+        let cur_pos = self.get_current_position();
 
-        self.current_position.x = current_x;
-        self.current_position.y = current_y;
+        self.current_position.x = cur_pos.x;
+        self.current_position.y = cur_pos.y;
 
         Ok(())
     }
@@ -106,7 +109,8 @@ impl Driver {
 
         if Calc::dist(self.calc.origin.x, self.calc.origin.y, x, y) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
 
-        let (column_goto, beam_goto) = self.calc.get_angles(x, y);
+        let angles = self.calc.get_angles(x, y);
+        let (column_goto, beam_goto) = (angles.column_angle, angles.beam_angle);
 
         let column_snapped = Calc::snap(Calc::to_degree(column_goto), self.step_degree);
         let beam_snapped = Calc::snap(Calc::to_degree(beam_goto), self.step_degree);
@@ -151,10 +155,10 @@ impl Driver {
         self.column_angle = column_snapped;
         self.beam_angle = beam_snapped;
 
-        let (current_x, current_y) = self.get_current_position();
+        let cur_pos = self.get_current_position();
 
-        self.current_position.x = current_x;
-        self.current_position.y = current_y;
+        self.current_position.x = cur_pos.x;
+        self.current_position.y = cur_pos.y;
 
         Ok(())
     }
@@ -244,13 +248,13 @@ impl Driver {
         return times;
     }
 
-    pub fn get_current_position(&self) -> (f32, f32) {
+    pub fn get_current_position(&self) -> Point {
         let (x, y) = self.get_column_position();
         let beam_angle = self.get_beam_angle();
-        let center = Point { x: x as f32, y: y as f32 };
+        let center = Point { x: x as f32, y: y as f32, z: 0.0 };
 
         let current_position = Calc::get_point(Calc::to_radian(beam_angle), &center);
 
-        return (current_position.x, current_position.y);
+        return current_position;
     }
 }

@@ -1,10 +1,5 @@
 use std::f32::consts::PI;
-
-#[derive(Clone)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32
-}
+use crate::utils::{ Point, AngleSet };
 
 pub struct Calc {
     pub origin: Point,
@@ -15,18 +10,20 @@ impl Calc {
     pub fn new(origin_x: f32, origin_y: f32, radius: f32) -> Calc {
         let origin = Point {
             x: origin_x,
-            y: origin_y
+            y: origin_y,
+            z: 0.0
         };
 
         return Calc { origin, radius }
     }
+
     pub fn dist(start_x: f32, start_y: f32, end_x: f32, end_y: f32) -> f32 {
         let d = f32::sqrt((start_x - end_x).powi(2) + (start_y - end_y).powi(2));
 
         return d;
     }
 
-    pub fn get_angles(&self, x: f32, y: f32) -> (f32, f32) {
+    pub fn get_angles(&self, x: f32, y: f32) -> AngleSet {
         let change_x = x - self.origin.x;
         let chang_y = y - self.origin.y;
 
@@ -35,16 +32,16 @@ impl Calc {
         let h = f32::sqrt(self.radius.powi(2) - a.powi(2));
         let i = f32::atan(chang_y/change_x);
 
-        let theta_one = f32::atan(h/a) + i;
+        let column_angle = f32::atan(h/a) + i;
 
-        let point_one = Calc::get_point(theta_one, &self.origin);
+        let point_one = Calc::get_point(column_angle, &self.origin);
         let change_x2 = x-point_one.x;
         let change_y2 = y-point_one.y;
         let is_third = i32::abs(i32::signum(f32::signum(change_x2) as i32 + f32::signum(change_y2) as i32 + 2)-1);
 
-        let theta_two = f32::atan(change_y2/change_x2) - (PI*is_third as f32);
+        let beam_angle = f32::atan(change_y2/change_x2) - (PI*is_third as f32);
 
-        return (theta_one, theta_two);
+        return AngleSet { column_angle, beam_angle, base_angle: 0.0 };
     }
 
     pub fn get_angles_3d(&self, x: f32, y: f32, z: f32) -> (f32, f32, f32) {
@@ -52,9 +49,9 @@ impl Calc {
 
         let x_prime = x*f32::cos(-theta) + z*f32::sin(-theta);
 
-        let (theta_column, theta_beam) = self.get_angles(x_prime, y);
+        let x_y_angles = self.get_angles(x_prime, y);
 
-        return (theta, theta_column, theta_beam)
+        return (theta, x_y_angles.column_angle, x_y_angles.beam_angle)
     }
 
     pub fn to_degree(angle: f32) -> f32 {
@@ -69,7 +66,7 @@ impl Calc {
         let x = f32::cos(angle) + center.x;
         let y = f32::sin(angle) + center.y;
 
-        return Point{ x, y }
+        return Point{ x, y, z: 0.0 }
      }
 
     pub fn snap(angle: f32, precision: f32) -> f32{
@@ -87,7 +84,7 @@ impl Calc {
             smoothed.push(new_point);
         }
 
-        return smoothed;
+        return smoothed
     }
 
     pub fn normalize(min: i64, max: i64, start: i64, end: i64, input: i64) -> i64 {
@@ -101,6 +98,7 @@ impl Calc {
         let max = input.iter().max().unwrap() + 1;
 
         for i in 0..input.len() {
+            //gay ass dereference here
             new[i] = Calc::normalize(*min, max, end, start, input[i]); //TEMP CHANGED THIS TO PUT END AS START AND START AS END, FIX THE LATER
         }
 
