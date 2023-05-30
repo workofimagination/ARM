@@ -43,7 +43,6 @@ pub struct App {
     current_mode: Mode,
     buffer: String,
     driver: Driver,
-    is_moving: bool
 }
 
 impl App {
@@ -62,10 +61,8 @@ impl App {
         let buffer = String::from("");
         let driver = Driver::new();
 
-        let is_moving = false;
-
         return App { prev_positions, command_output, current_mode, buffer, driver, prev_positions_size,
-            command_output_size, is_moving }
+            command_output_size }
     }
 
     pub fn start(&mut self) {

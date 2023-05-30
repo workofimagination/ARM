@@ -240,10 +240,7 @@ impl Driver {
         let mut counter = 1;
         let mut times: Vec<i64> = Vec::new();
 
-        for _ in 0..i32::abs(steps) {
-            times.push(counter);
-            counter += 100;
-        }
+        (0..i32::abs(steps)).for_each(|_| { times.push(counter); counter += 100 });
 
         return times;
     }
