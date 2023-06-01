@@ -214,18 +214,18 @@ impl Driver {
         })
     }
 
-    pub fn get_column_position(&self) -> (f32, f32) {
+    pub fn get_column_position(&self) -> Point {
         let column = Calc::get_point(Calc::to_radian(self.column_angle), &self.calc.origin);
 
-        return (column.x, column.y)
+        return Point { x: column.x, y: column.y, z: 0.0 }
     }
 
-    pub fn get_beam_position(&self) -> (f32, f32) {
+    pub fn get_beam_position(&self) -> Point {
         let column = Calc::get_point(Calc::to_radian(self.column_angle), &self.calc.origin);
 
         let beam = Calc::get_point(Calc::to_radian(self.beam_angle), &column);
 
-        return (beam.x, beam.y)
+        return Point { x: beam.x, y: beam.y, z: 0.0 }
     } 
 
     pub fn get_beam_angle(&self) -> f32 {
@@ -246,9 +246,9 @@ impl Driver {
     }
 
     pub fn get_current_position(&self) -> Point {
-        let (x, y) = self.get_column_position();
+        let pos = self.get_column_position();
         let beam_angle = self.get_beam_angle();
-        let center = Point { x: x as f32, y: y as f32, z: 0.0 };
+        let center = Point { x: pos.x as f32, y: pos.y as f32, z: 0.0 };
 
         let current_position = Calc::get_point(Calc::to_radian(beam_angle), &center);
 

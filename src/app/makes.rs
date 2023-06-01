@@ -142,18 +142,18 @@ impl App {
     }
 
     pub fn make_config_text(&self) -> Vec<Spans>{
-        let (beam_x, beam_y) = self.driver.get_beam_position();
-        let (column_x, column_y) = self.driver.get_column_position();
+        let beam = self.driver.get_beam_position();
+        let column = self.driver.get_column_position();
 
         let text = vec![
             App::make_info_span(String::from("DELAY: "), format!("{}", self.driver.micro_delay_default)),
             App::make_info_span(String::from("MAX DELAY: "), format!("{}", self.driver.micro_delay_max)),
             App::make_info_span(String::from("MIN DELAY: "), format!("{}", self.driver.micro_delay_min)),
             App::make_info_span(String::from("MVNT AMT: "), format!("{}", self.driver.movement_amount)),
-            App::make_info_span(String::from("BEAM X: "), format!("{}", beam_x)),
-            App::make_info_span(String::from("BEAM Y: "), format!("{}", beam_y)),
-            App::make_info_span(String::from("COLUMN X: "), format!("{}", column_x)),
-            App::make_info_span(String::from("COLUMN Y: "), format!("{}", column_y))
+            App::make_info_span(String::from("BEAM X: "), format!("{}", beam.x)),
+            App::make_info_span(String::from("BEAM Y: "), format!("{}", beam.y)),
+            App::make_info_span(String::from("COLUMN X: "), format!("{}", column.x)),
+            App::make_info_span(String::from("COLUMN Y: "), format!("{}", column.y))
         ];
 
         return text

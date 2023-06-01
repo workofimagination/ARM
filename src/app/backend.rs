@@ -151,13 +151,11 @@ impl App {
     }
 
     pub fn get_2d_points(&self) -> Vec<(f64, f64)>{
-        let (column_x, column_y) = self.driver.get_column_position();
-        let column = (column_x as f64, column_y as f64);
+        let column = self.driver.get_column_position();
 
-        let (beam_x, beam_y) = self.driver.get_beam_position();
-        let beam = (beam_x as f64, beam_y as f64);
+        let beam = self.driver.get_beam_position();
 
-        return vec![(0.0,0.0), column, beam]
+        return vec![(0.0,0.0), (column.x as f64, column.y as f64), (beam.x as f64, beam.y as f64)]
     }
 
     pub fn increase_movement_amount(&mut self) {
