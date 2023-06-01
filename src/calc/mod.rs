@@ -44,14 +44,18 @@ impl Calc {
         return AngleSet { column_angle, beam_angle, base_angle: 0.0 };
     }
 
-    pub fn get_angles_3d(&self, x: f32, y: f32, z: f32) -> (f32, f32, f32) {
+    pub fn get_angles_3d(&self, x: f32, y: f32, z: f32) -> AngleSet {
         let theta = f32::atan(z/x);
 
         let x_prime = x*f32::cos(-theta) + z*f32::sin(-theta);
 
         let x_y_angles = self.get_angles(x_prime, y);
 
-        return (theta, x_y_angles.column_angle, x_y_angles.beam_angle)
+        return AngleSet {
+            column_angle: x_y_angles.column_angle,
+            beam_angle: x_y_angles.beam_angle,
+            base_angle: theta
+        }
     }
 
     pub fn to_degree(angle: f32) -> f32 {
