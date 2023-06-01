@@ -124,12 +124,20 @@ impl App {
         return self.driver.current_position.y
     }
 
+    pub fn get_current_z(&self) -> f32 {
+        return self.driver.current_position.z
+    }
+
     pub fn get_current_column_angle(&self) -> f32 {
-        return self.driver.get_column_angle()
+        return self.driver.column_angle;
     }
 
     pub fn get_current_beam_angle(&self) -> f32 {
-        return self.driver.get_beam_angle()
+        return self.driver.beam_angle;
+    }
+
+    pub fn get_current_base_angle(&self) -> f32 {
+        return self.driver.base_angle;
     }
 
     pub fn save_current_angles(&mut self) {
@@ -156,6 +164,13 @@ impl App {
         let beam = self.driver.get_beam_position();
 
         return vec![(0.0,0.0), (column.x as f64, column.y as f64), (beam.x as f64, beam.y as f64)]
+    }
+
+    //this function may not need to exist
+    pub fn get_x_z_points(&self) -> Vec<(f64, f64)> {
+        let return_vec = vec![(0.0, 0.0), (self.driver.current_position.x as f64, self.driver.current_position.z as f64)];
+
+        return return_vec
     }
 
     pub fn increase_movement_amount(&mut self) {

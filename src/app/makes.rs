@@ -19,7 +19,7 @@ impl App {
         return paragraph
     }
 
-    pub fn make_map<'a>(&'a mut self, data: &'a Vec<(f64, f64)>) -> Chart {
+    pub fn make_map<'a>(&'a mut self, data: &'a Vec<(f64, f64)>, title: String, x_bounds: [f64; 2], y_bounds: [f64; 2]) -> Chart {
         let dataset = vec![
             Dataset::default()
                 .marker(symbols::Marker::Braille)
@@ -30,16 +30,16 @@ impl App {
         let map = Chart::new(dataset)
             .block(
                 Block::default()
-                .title("Map")
+                .title(title)
                 .borders(Borders::ALL)
             )
             .x_axis(
                 Axis::default()
-                .bounds([-2.0, 2.0])
+                .bounds(x_bounds)
             )
             .y_axis(
                 Axis::default()
-                .bounds([-2.0, 2.0])
+                .bounds(y_bounds)
             );
 
         return map;

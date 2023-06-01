@@ -17,6 +17,12 @@ impl Calc {
         return Calc { origin, radius }
     }
 
+    pub fn dist_3d(start: &Point, end: &Point) -> f32 {
+        let d = f32::sqrt((end.x - start.x).powi(2) + (end.y - start.y).powi(2) + (end.z - start.z).powi(2));
+
+        return d
+    }
+
     pub fn dist(start_x: f32, start_y: f32, end_x: f32, end_y: f32) -> f32 {
         let d = f32::sqrt((start_x - end_x).powi(2) + (start_y - end_y).powi(2));
 

@@ -114,10 +114,12 @@ impl App {
                 let top_chunks = App::make_chunk(
                     Direction::Horizontal,
                     vec![
-                        Constraint::Percentage(25),
-                        Constraint::Percentage(25),
-                        Constraint::Percentage(25),
-                        Constraint::Percentage(25)
+                        Constraint::Percentage(16),
+                        Constraint::Percentage(17),
+                        Constraint::Percentage(17),
+                        Constraint::Percentage(17),
+                        Constraint::Percentage(17),
+                        Constraint::Percentage(16)
                     ]
                 ).split(chunks[0]);
 
@@ -130,6 +132,30 @@ impl App {
 
                     ]
                 ).split(chunks[1]);
+
+                let middle_right_chunks = App::make_chunk(
+                    Direction::Horizontal,
+                    vec![
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50)
+                    ]
+                ).split(middle_chunks[1]);
+
+                let middle_right_top_chunks = App::make_chunk(
+                    Direction::Vertical,
+                    vec![
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50)
+                    ]
+                ).split(middle_right_chunks[0]);
+
+                let middle_right_bottom_chunks = App::make_chunk(
+                    Direction::Vertical,
+                    vec![
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50)
+                    ]
+                ).split(middle_right_chunks[1]);
 
                 let middle_left_chunks = App::make_chunk(
                     Direction::Vertical, 
@@ -158,26 +184,42 @@ impl App {
                 let current_x = self.make_plain_paragraph(format!("Current X: {}", self.get_current_x()));
                 rect.render_widget(current_x, top_chunks[0]);
 
-
                 let current_y = self.make_plain_paragraph(format!("Current Y: {}", self.get_current_y()));
                 rect.render_widget(current_y, top_chunks[1]);
 
+                let current_z = self.make_plain_paragraph(format!("Current Z: {}", self.get_current_z()));
+                rect.render_widget(current_z, top_chunks[2]);
 
                 let current_column = self.make_plain_paragraph(format!("Column Angle: {}", self.get_current_column_angle()));
-                rect.render_widget(current_column, top_chunks[2]);
-
+                rect.render_widget(current_column, top_chunks[3]);
 
                 let current_beam = self.make_plain_paragraph(format!("Beam Angle: {}", self.get_current_beam_angle()));
-                rect.render_widget(current_beam, top_chunks[3]);
+                rect.render_widget(current_beam, top_chunks[4]);
+
+                let current_base = self.make_plain_paragraph(format!("Base Angle: {}", self.get_current_base_angle()));
+                rect.render_widget(current_base, top_chunks[5]);
 
                 let buffer = self.make_buffer();
                 rect.render_widget(buffer, bottom_chunks[1]);
 
                 
+                // COME BACK HERE
                 let data = self.get_2d_points();
-                let map = self.make_map(&data);
-                rect.render_widget(map, middle_chunks[1]);
+                let map = self.make_map(&data, String::from("X-Y"), [-2.0, 2.0], [0.0, 2.0]);
+                rect.render_widget(map, middle_right_bottom_chunks[1]);
 
+                let x_z_data = self.get_x_z_points();
+                let x_z_map = self.make_map(&x_z_data, String::from("X-Z"), [0.0, 2.0], [-2.0, 2.0]);
+                rect.render_widget(x_z_map, middle_right_top_chunks[0]);
+
+                //dude the naming the for the middle right chunks if fucked up
+                let true_x_y_data = vec![(self.driver.current_position.x as f64, self.driver.current_position.y as f64)];
+                let true_x_y_map = self.make_map(&true_x_y_data, String::from("True X-Y"), [0.0, 2.0], [0.0, 2.0]);
+                rect.render_widget(true_x_y_map, middle_right_top_chunks[1]);
+
+                let true_x_z_data = vec![(self.driver.current_position.x as f64, self.driver.current_position.z as f64)];
+                let true_x_z_map = self.make_map(&true_x_z_data, String::from("True X-Z"), [0.0, 2.0], [-2.0, 2.0]);
+                rect.render_widget(true_x_z_map, middle_right_bottom_chunks[0]);
 
                 let config = self.make_config_window();
                 rect.render_widget(config, top_middle_left_chunks[1]);

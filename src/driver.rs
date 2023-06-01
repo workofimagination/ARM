@@ -152,6 +152,8 @@ impl Driver {
     }
 
     pub fn goto_point_3d(&mut self, x: f32, y: f32, z: f32) -> Result<(), DriverError> {
+        if Calc::dist_3d(&self.current_position, &Point { x, y, z }) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
+
         let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
         let angles = self.calc.get_angles_3d(x, y ,z);
