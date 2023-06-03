@@ -45,8 +45,8 @@ impl Driver {
         let base_angle = 0.0;
         let step_degree = 1.0/4.0;
         let movement_amount = 0.01;
-        let micro_delay_default = 0;
-        let micro_delay_min = 1750;
+        let micro_delay_default = 1250;
+        let micro_delay_min = 1250;
         let micro_delay_max = 4000;
         let current_position = Point { x: 2.0, y: 0.0, z: 0.0 };
         let calc = Calc::new(0.0, 0.0, 1.0);
@@ -222,7 +222,7 @@ impl Driver {
                 motor.step(dir);
                 thread::sleep(delay);
                 motor.reset();
-                thread::sleep(delay);
+                thread::sleep(Duration::from_micros(10));
             }
         })
     }
@@ -237,7 +237,7 @@ impl Driver {
                 motor.step(dir);
                 thread::sleep(Duration::from_micros(delay as u64));
                 motor.reset();
-                thread::sleep(Duration::from_micros(delay as u64));
+                thread::sleep(Duration::from_micros(10));
             }
         })
     }
