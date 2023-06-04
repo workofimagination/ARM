@@ -43,7 +43,7 @@ impl Driver {
         let column_angle = 0.0;
         let beam_angle = 0.0;
         let base_angle = 0.0;
-        let step_degree = 1.0/4.0;
+        let step_degree = 1.0/28.0;
         let movement_amount = 0.01;
         let micro_delay_default = 1250;
         let micro_delay_min = 1250;
