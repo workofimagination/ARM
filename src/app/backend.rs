@@ -4,7 +4,7 @@ use crate::driver::DriverError;
 use crate::driver;
 use crate::utils::{Utils, ShiftingVec};
 
-use std::num::ParseFloatError;
+use std::num::{ParseFloatError, ParseIntError};
 
 use rand::Rng;
 
@@ -36,12 +36,7 @@ impl App {
         self.prev_positions.insert(current_position);
     }
 
-    pub fn get_current_position(&mut self) -> AngleSet {
-        let beam_angle = self.driver.get_beam_angle();
-        let column_angle = self.driver.get_column_angle();
-
-        return AngleSet {beam_angle, column_angle, rotation_angle: 0.0 };
-    }
+    //-------- MOVES --------\\
 
     pub fn move_direction(&mut self, dir: driver::Direction) {
         match self.driver.move_direction(dir) {
@@ -90,22 +85,60 @@ impl App {
         }
     }
 
-    pub fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {
-        let coords = self.buffer.split(" ").collect::<Vec<&str>>();
-
-        let x = match coords[0].parse::<f32>() {
+    pub fn move_motor(&mut self) {
+        let (motor, steps) = match self.parse_move_motor() {
             Ok(x) => x,
-            Err(e) => return Err(e)
+            Err(e) => {
+                self.command_output.insert(format!("{}", e));
+                return;
+            }
         };
 
-        let y = match coords[1].parse::<f32>() {
-            Ok(y) => y,
-            Err(e) => return Err(e)
-        };
-
-        Ok((x, y))
+        if motor == "beam" {
+            self.driver.move_beam(steps);
+        } else {
+            self.driver.move_column(steps);
+        } 
     }
 
+    pub fn move_beam_pos(&mut self) {
+        let step_amount = self.driver.generic_step_amount;
+
+        self.driver.move_beam(step_amount);
+    }
+
+    pub fn move_beam_neg(&mut self) {
+        let step_amount = self.driver.generic_step_amount * -1;
+
+        self.driver.move_beam(step_amount);
+    }
+
+    pub fn move_column_pos(&mut self) {
+        let step_amount = self.driver.generic_step_amount;
+
+        self.driver.move_column(step_amount);
+    }
+
+    pub fn move_column_neg(&mut self) {
+        let step_amount = self.driver.generic_step_amount * -1;
+
+        self.driver.move_column(step_amount);
+    }
+
+    //-------- END MOVES --------\\
+
+
+
+    //-------- GETS --------\\ 
+
+
+    pub fn get_current_position(&mut self) -> AngleSet {
+        let beam_angle = self.driver.get_beam_angle();
+        let column_angle = self.driver.get_column_angle();
+
+        return AngleSet {beam_angle, column_angle, rotation_angle: 0.0 };
+    }
+    
     pub fn get_current_mode_string(&self) -> &str {
         let string = match self.current_mode {
             Mode::Normal => { "Normal" },
@@ -140,16 +173,6 @@ impl App {
         return self.driver.base_angle;
     }
 
-    pub fn save_current_angles(&mut self) {
-        let current_angles = self.get_current_angle_set();
-
-        let save_string = format!("{} {} {}", current_angles.column_angle, current_angles.beam_angle, current_angles.rotation_angle);
-
-        match Utils::save_to_file("./output".to_string(), save_string) {
-            Ok(x) => self.command_output.insert(x),
-            Err(e) => self.command_output.insert(format!("unable to save to file: {}", e))
-        }
-    }
 
     pub fn get_current_angle_set(&self) ->  AngleSet {
         let beam_angle = self.get_current_beam_angle();
@@ -172,6 +195,23 @@ impl App {
 
         return return_vec
     }
+
+
+    //-------- GETS END --------\\
+
+    pub fn save_current_angles(&mut self) {
+        let current_angles = self.get_current_angle_set();
+
+        let save_string = format!("{} {} {}", current_angles.column_angle, current_angles.beam_angle, current_angles.rotation_angle);
+
+        match Utils::save_to_file("./output".to_string(), save_string) {
+            Ok(x) => self.command_output.insert(x),
+            Err(e) => self.command_output.insert(format!("unable to save to file: {}", e))
+        }
+    }
+
+
+    //-------- STATE CHANGES --------\\
 
     pub fn increase_movement_amount(&mut self) {
         self.driver.movement_amount *= 1.25;
@@ -221,16 +261,16 @@ impl App {
         self.driver.micro_delay_default -= 10;
     }
 
-    pub fn flush_prev_positions(&mut self) {
-        self.prev_positions.flush();
+    pub fn increase_generic_step_amount(&mut self) {
+        self.driver.generic_step_amount += 50;
     }
 
-    pub fn flush_command_output(&mut self) {
-        self.command_output.flush();
-    }
+    pub fn decrease_generic_step_amount(&mut self) {
+        if self.driver.generic_step_amount <= 50 {
+            return
+        }
 
-    pub fn set_shifting_vec_size<T>(size: usize, vec: &mut ShiftingVec<T>) where T: Clone {
-        vec.set_size(size);
+        self.driver.generic_step_amount -= 50;
     }
 
     pub fn increase_prev_points(&mut self) {
@@ -265,6 +305,24 @@ impl App {
         App::set_shifting_vec_size(self.command_output_size, &mut self.command_output)
     }
 
+    pub fn flush_prev_positions(&mut self) {
+        self.prev_positions.flush();
+    }
+
+    pub fn flush_command_output(&mut self) {
+        self.command_output.flush();
+    }
+
+    pub fn set_shifting_vec_size<T>(size: usize, vec: &mut ShiftingVec<T>) where T: Clone {
+        vec.set_size(size);
+    }
+
+    //-------- END STATE CHANGES --------\\
+
+
+
+    //-------- MISC? --------\\
+
     pub fn handle_driver_error_generic(&mut self, error: DriverError) {
         match error {
             DriverError::UnReachable => {
@@ -278,5 +336,34 @@ impl App {
             }
         }
     }
-}
 
+    pub fn parse_buffer_goto(&self) -> Result<(f32, f32), ParseFloatError> {
+        let coords = self.buffer.split(" ").collect::<Vec<&str>>();
+
+        let x = match coords[0].parse::<f32>() {
+            Ok(x) => x,
+            Err(e) => return Err(e)
+        };
+
+        let y = match coords[1].parse::<f32>() {
+            Ok(y) => y,
+            Err(e) => return Err(e)
+        };
+
+        Ok((x, y))
+    }
+
+    pub fn parse_move_motor(&mut self) -> Result<(&str, i32), ParseIntError> {
+        let args = self.buffer.split(" ").collect::<Vec<&str>>();
+        let motor = args[0];
+
+        let steps = match args[1].parse::<i32>() {
+            Ok(x) => x,
+            Err(e) => return Err(e)
+        };
+
+        Ok((motor, steps))
+    }
+
+    //-------- END MISC ------\\
+}

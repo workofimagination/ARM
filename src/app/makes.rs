@@ -153,7 +153,8 @@ impl App {
             App::make_info_span(String::from("BEAM X: "), format!("{}", beam.x)),
             App::make_info_span(String::from("BEAM Y: "), format!("{}", beam.y)),
             App::make_info_span(String::from("COLUMN X: "), format!("{}", column.x)),
-            App::make_info_span(String::from("COLUMN Y: "), format!("{}", column.y))
+            App::make_info_span(String::from("COLUMN Y: "), format!("{}", column.y)),
+            App::make_info_span(String::from("STEP AMT: "), format!("{}", self.driver.generic_step_amount)),
         ];
 
         return text

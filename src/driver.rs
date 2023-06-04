@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread::{self, JoinHandle};
 use rand::Rng;
-use crate::stepper::TestStepper;
+use crate::stepper::{TestStepper};
 use crate::calc::Calc;
 use crate::utils::{ Point, AngleSet };
 
@@ -19,6 +19,7 @@ pub struct Driver {
     pub micro_delay_max: i64,
     pub micro_delay_min: i64,
     pub current_position: Point,
+    pub generic_step_amount: i32,
     pub calc: Calc
 }
 
@@ -37,22 +38,24 @@ pub enum Direction {
 
 impl Driver {
     pub fn new() -> Driver {
-        let column_motor = Arc::new(Mutex::new(TestStepper::new(0, 0)));
-        let beam_motor = Arc::new(Mutex::new(TestStepper::new(0, 0)));
-        let base_motor = Arc::new(Mutex::new(TestStepper::new(0, 0)));
+        let column_motor = Arc::new(Mutex::new(TestStepper::new(20, 21)));
+        let beam_motor = Arc::new(Mutex::new(TestStepper::new(7, 8)));
+        let base_motor = Arc::new(Mutex::new(TestStepper::new(5, 6)));
         let column_angle = 0.0;
         let beam_angle = 0.0;
         let base_angle = 0.0;
         let step_degree = 1.0/28.0;
-        let movement_amount = 0.01;
-        let micro_delay_default = 1250;
-        let micro_delay_min = 1250;
+        let movement_amount = 0.20;
+        let micro_delay_default = 2500;
+        let micro_delay_min = 2500;
         let micro_delay_max = 4000;
+        let generic_step_amount = 400;
         let current_position = Point { x: 2.0, y: 0.0, z: 0.0 };
         let calc = Calc::new(0.0, 0.0, 1.0);
 
         return Driver { column_motor, beam_motor, base_motor, column_angle, beam_angle, base_angle, step_degree,
-                        movement_amount,micro_delay_default, micro_delay_max, micro_delay_min, current_position, calc 
+                        movement_amount,micro_delay_default, micro_delay_max, micro_delay_min, current_position,
+                        generic_step_amount, calc 
         }
     }
 
@@ -188,6 +191,7 @@ impl Driver {
         self.current_position.x = x;
         self.current_position.y = y;
         self.current_position.z = z;
+
         Ok(())
     }
 
@@ -219,7 +223,7 @@ impl Driver {
             let delay = Duration::from_micros(delay as u64);
 
             for _ in 0..i32::abs(steps) {
-                motor.step(dir);
+                motor.step(!dir);
                 thread::sleep(delay);
                 motor.reset();
                 thread::sleep(Duration::from_micros(10));
@@ -234,12 +238,27 @@ impl Driver {
             let mut motor = motor.lock().unwrap();
 
             for delay in delays {
-                motor.step(dir);
+                motor.step(!dir);
                 thread::sleep(Duration::from_micros(delay as u64));
                 motor.reset();
                 thread::sleep(Duration::from_micros(10));
             }
         })
+    }
+
+    //FOR PUBLIC INTERFACE
+    pub fn move_beam(&mut self, steps: i32) {
+        let delay = self.micro_delay_default;
+        let dir = if i32::signum(steps) == -1 { false } else { true };
+
+        Driver::move_motor(&mut self.beam_motor, steps, dir, delay).join().unwrap();
+    }
+
+    pub fn move_column(&mut self, steps: i32) {
+        let delay = self.micro_delay_default;
+        let dir = if i32::signum(steps) == -1 { false } else { true };
+
+        Driver::move_motor(&mut self.column_motor, steps, dir, delay).join().unwrap();
     }
 
     pub fn get_steps_2d(&self, column_angle: f32, beam_angle: f32) -> (i32, i32, f32, f32) { //this
@@ -248,7 +267,7 @@ impl Driver {
         let beam_snapped = Calc::snap(Calc::to_degree(beam_angle), self.step_degree);
 
         let change_in_column = column_snapped - self.column_angle;
-        let change_in_beam = beam_snapped - self.beam_angle - self.column_angle;
+        let change_in_beam = beam_snapped - self.beam_angle - change_in_column;
 
         let column_steps = (change_in_column/self.step_degree) as i32;
         let beam_steps = (change_in_beam/self.step_degree) as i32;
@@ -273,15 +292,15 @@ impl Driver {
     }
 
     pub fn get_column_position(&self) -> Point {
-        let column = Calc::get_point(Calc::to_radian(self.column_angle), &self.calc.origin);
+        let column = Calc::get_point_2d(Calc::to_radian(self.column_angle), &self.calc.origin);
 
         return Point { x: column.x, y: column.y, z: 0.0 }
     }
 
     pub fn get_beam_position(&self) -> Point {
-        let column = Calc::get_point(Calc::to_radian(self.column_angle), &self.calc.origin);
+        let column = Calc::get_point_2d(Calc::to_radian(self.column_angle), &self.calc.origin);
 
-        let beam = Calc::get_point(Calc::to_radian(self.beam_angle), &column);
+        let beam = Calc::get_point_2d(Calc::to_radian(self.beam_angle), &column);
 
         return Point { x: beam.x, y: beam.y, z: 0.0 }
     } 
@@ -308,7 +327,7 @@ impl Driver {
         let beam_angle = self.get_beam_angle();
         let center = Point { x: pos.x as f32, y: pos.y as f32, z: 0.0 };
 
-        let current_position = Calc::get_point(Calc::to_radian(beam_angle), &center);
+        let current_position = Calc::get_point_2d(Calc::to_radian(beam_angle), &center);
 
         return current_position;
     }

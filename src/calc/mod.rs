@@ -40,7 +40,7 @@ impl Calc {
 
         let column_angle = f32::atan(h/a) + i;
 
-        let point_one = Calc::get_point(column_angle, &self.origin);
+        let point_one = Calc::get_point_2d(column_angle, &self.origin);
         let change_x2 = x-point_one.x;
         let change_y2 = y-point_one.y;
         let is_third = i32::abs(i32::signum(f32::signum(change_x2) as i32 + f32::signum(change_y2) as i32 + 2)-1);
@@ -72,7 +72,7 @@ impl Calc {
         return (PI*angle) / (180.0);
     }
 
-    pub fn get_point(angle: f32, center: &Point) -> Point {
+    pub fn get_point_2d(angle: f32, center: &Point) -> Point {
         let x = f32::cos(angle) + center.x;
         let y = f32::sin(angle) + center.y;
 

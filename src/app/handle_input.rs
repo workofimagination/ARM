@@ -81,7 +81,21 @@ pub fn handle_input(&mut self, rx: &Receiver<Event<KeyEvent>>, terminal: &mut Te
 
                         KeyCode::Char('.') => { self.increase_delay(); }
 
-                        KeyCode::Enter => { self.goto(); }
+                        KeyCode::Enter => { self.goto(); },
+
+                        KeyCode::Char('r') => { self.move_motor() },
+
+                        KeyCode::Char('m') => { self.increase_generic_step_amount() },
+
+                        KeyCode::Char('n') => { self.decrease_generic_step_amount() }
+
+                        KeyCode::Char('q') => { self.move_beam_neg() },
+
+                        KeyCode::Char('e') => { self.move_beam_pos() },
+
+                        KeyCode::Char('a') => { self.move_column_neg() },
+
+                        KeyCode::Char('d') => { self.move_column_pos() }
 
                         _ => {}
                     },
