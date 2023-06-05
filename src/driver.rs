@@ -2,14 +2,14 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread::{self, JoinHandle};
 use rand::Rng;
-use crate::stepper::{TestStepper};
+use crate::stepper::TestStepper as Stepper;
 use crate::calc::Calc;
 use crate::utils::{ Point, AngleSet };
 
 pub struct Driver {
-    pub column_motor: Arc<Mutex<TestStepper>>,
-    pub beam_motor: Arc<Mutex<TestStepper>>,
-    pub base_motor: Arc<Mutex<TestStepper>>,
+    pub column_motor: Arc<Mutex<Stepper>>,
+    pub beam_motor: Arc<Mutex<Stepper>>,
+    pub base_motor: Arc<Mutex<Stepper>>,
     pub column_angle: f32,
     pub beam_angle: f32,
     pub base_angle: f32,
@@ -38,9 +38,9 @@ pub enum Direction {
 
 impl Driver {
     pub fn new() -> Driver {
-        let column_motor = Arc::new(Mutex::new(TestStepper::new(20, 21)));
-        let beam_motor = Arc::new(Mutex::new(TestStepper::new(7, 8)));
-        let base_motor = Arc::new(Mutex::new(TestStepper::new(5, 6)));
+        let column_motor = Arc::new(Mutex::new(Stepper::new(20, 21)));
+        let beam_motor = Arc::new(Mutex::new(Stepper::new(7, 8)));
+        let base_motor = Arc::new(Mutex::new(Stepper::new(5, 6)));
         let column_angle = 0.0;
         let beam_angle = 0.0;
         let base_angle = 0.0;
@@ -215,7 +215,7 @@ impl Driver {
         } 
     }
 
-    pub fn move_motor(motor: &mut Arc<Mutex<TestStepper>>, steps: i32, dir: bool, delay: i64) -> JoinHandle<()> {
+    pub fn move_motor(motor: &mut Arc<Mutex<Stepper>>, steps: i32, dir: bool, delay: i64) -> JoinHandle<()> {
         let motor = Arc::clone(motor);
 
         thread::spawn( move || {
@@ -231,7 +231,7 @@ impl Driver {
         })
     }
 
-    pub fn move_motor_smooth(motor: &mut Arc<Mutex<TestStepper>>, delays: Vec<i64>, dir: bool) -> JoinHandle<()> {
+    pub fn move_motor_smooth(motor: &mut Arc<Mutex<Stepper>>, delays: Vec<i64>, dir: bool) -> JoinHandle<()> {
         let motor = Arc::clone(motor);
 
         thread::spawn(move || {
