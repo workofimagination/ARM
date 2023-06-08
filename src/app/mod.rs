@@ -11,6 +11,7 @@ use crossterm::terminal::enable_raw_mode;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
+use std::sync::Arc;
 
 
 use tui::Terminal;
@@ -202,8 +203,6 @@ impl App {
                 let buffer = self.make_buffer();
                 rect.render_widget(buffer, bottom_chunks[1]);
 
-                
-                // COME BACK HERE
                 let data = self.get_2d_points();
                 let map = self.make_map(&data, String::from("X-Y"), [-2.0, 2.0], [0.0, 2.0]);
                 rect.render_widget(map, middle_right_bottom_chunks[1]);
@@ -212,7 +211,6 @@ impl App {
                 let x_z_map = self.make_map(&x_z_data, String::from("X-Z"), [0.0, 2.0], [-2.0, 2.0]);
                 rect.render_widget(x_z_map, middle_right_top_chunks[0]);
 
-                //dude the naming the for the middle right chunks if fucked up
                 let true_x_y_data = vec![(self.driver.current_position.x as f64, self.driver.current_position.y as f64)];
                 let true_x_y_map = self.make_map(&true_x_y_data, String::from("True X-Y"), [0.0, 2.0], [0.0, 2.0]);
                 rect.render_widget(true_x_y_map, middle_right_top_chunks[1]);
@@ -224,14 +222,11 @@ impl App {
                 let config = self.make_config_window();
                 rect.render_widget(config, top_middle_left_chunks[1]);
 
-
                 let (prev_items, state) = self.make_previous_points();
                 rect.render_stateful_widget(prev_items, top_middle_left_chunks[0], state);
 
-
                 let (command_items, state) = self.make_command_output();
                 rect.render_stateful_widget(command_items, middle_left_chunks[1], state);
-
 
                 let current_mode_box = self.make_current_mode_box();
                 rect.render_widget(current_mode_box, bottom_chunks[0]);

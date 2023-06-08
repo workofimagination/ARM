@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread::{self, JoinHandle};
 use rand::Rng;
-use crate::stepper::Stepper as Stepper;
+use crate::stepper::TestStepper as Stepper;
 use crate::calc::Calc;
 use crate::utils::{ Point, AngleSet };
 
@@ -45,7 +45,7 @@ impl Driver {
         let beam_angle = 0.0;
         let base_angle = 0.0;
         let step_degree = 1.0/28.0;
-        let movement_amount = 0.20;
+        let movement_amount = 0.05;
         let micro_delay_default = 2500;
         let micro_delay_min = 2500;
         let micro_delay_max = 4000;
@@ -76,8 +76,8 @@ impl Driver {
 
         let (beam_steps, column_steps, column_snapped, beam_snapped) = self.get_steps_2d(angles.column_angle, angles.beam_angle);
 
-        let column_dir = if i32::signum(beam_steps) == -1 { false } else { true };
-        let beam_dir = if i32::signum(column_steps) == -1 { false } else { true };
+        let column_dir = if i32::signum(column_steps) == -1 { false } else { true };
+        let beam_dir = if i32::signum(beam_steps) == -1 { false } else { true };
 
         let column_thread = Driver::move_motor(&mut self.column_motor, column_steps, column_dir, self.micro_delay_default);
         thread_pool.push(column_thread);
@@ -110,15 +110,15 @@ impl Driver {
 
         let angles = self.calc.get_angles(x, y);
 
-        let (beam_steps, column_steps, column_snapped, beam_snapped) = self.get_steps_2d(angles.column_angle, angles.beam_angle); 
+        let (beam_steps, column_steps, column_snapped, beam_snapped) = self.get_steps_2d(angles.column_angle, angles.beam_angle);
 
-        let column_dir = if i32::signum(beam_steps) == -1 { false } else { true };
-        let beam_dir = if i32::signum(column_steps) == -1 { false } else { true };
+        let column_dir = if i32::signum(column_steps) == -1 { false } else { true };
+        let beam_dir = if i32::signum(beam_steps) == -1 { false } else { true };
 
-        let column_liner = Driver::get_linear_steps(column_steps);
+        let column_linear = Driver::get_linear_steps(column_steps);
         let beam_linear = Driver::get_linear_steps(beam_steps);
 
-        let column_smoothed = Calc::smooth(column_liner);
+        let column_smoothed = Calc::smooth(column_linear);
         let beam_smoothed = Calc::smooth(beam_linear);
 
         match Calc::normalize_vec(self.micro_delay_min, self.micro_delay_max, column_smoothed) {
@@ -150,6 +150,7 @@ impl Driver {
 
         self.current_position.x = cur_pos.x;
         self.current_position.y = cur_pos.y;
+
 
         Ok(())
     }
@@ -272,7 +273,7 @@ impl Driver {
         let column_steps = (change_in_column/self.step_degree) as i32;
         let beam_steps = (change_in_beam/self.step_degree) as i32;
 
-        return (column_steps, beam_steps, column_snapped, beam_snapped)
+        return (beam_steps, column_steps, column_snapped, beam_snapped)
     }
 
     //this is also retarded
@@ -317,7 +318,7 @@ impl Driver {
         let mut counter = 1;
         let mut times: Vec<i64> = Vec::new();
 
-        (0..i32::abs(steps)).for_each(|_| { times.push(counter); counter += 100 });
+        (0..i32::abs(steps)).for_each(|_| { times.push(counter); counter += 1});
 
         return times;
     }

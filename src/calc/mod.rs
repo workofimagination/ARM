@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 use crate::utils::{ Point, AngleSet };
+use std::io::prelude::*;
 
 pub struct Calc {
     pub origin: Point,
@@ -85,13 +86,16 @@ impl Calc {
 
     pub fn smooth(points: Vec<i64>) -> Vec<i64> {
         let amp = 1;
+        let min = points[0] as f64;
+        let max = (points[points.len() - 1] + 1) as f64;
+
         let mut smoothed: Vec<i64> = Vec::new();
 
-        for i in &points {
-            let t = i64::min(i64::max((i-points[0])/(points[points.len()-1]), 0), 1);
+        for i in points {
+            let k = f64::max(0.0, f64::min(1.0, (i as f64-min) / (max-min)));
+            let t = -((6.0*k) - (6.0*k*k) * 1000.0) as i64;
 
-            let new_point = amp*(-(-(t*t) + t));
-            smoothed.push(new_point);
+            smoothed.push(t);
         }
 
         return smoothed
@@ -104,14 +108,14 @@ impl Calc {
     pub fn normalize_vec(start: i64, end: i64, input: Vec<i64>) -> Option<Vec<i64>> {
         if input.len() == 0 { return None }
         let mut new = input.clone();
-        let min = input.iter().min().unwrap();
-        let max = input.iter().max().unwrap() + 1;
+
+        let min = input[0];
+        let max = input[input.len() / 2] + 1; 
 
         for i in 0..input.len() {
             //gay ass dereference here
-            new[i] = Calc::normalize(*min, max, end, start, input[i]); //TEMP CHANGED THIS TO PUT END AS START AND START AS END, FIX THE LATER
+            new[i] = Calc::normalize(min, max, start, end, input[i]); //TEMP CHANGED THIS TO PUT END AS START AND START AS END, FIX THE LATER
         }
-
 
         return Some(new);
     }
