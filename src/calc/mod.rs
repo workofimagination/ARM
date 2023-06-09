@@ -92,31 +92,59 @@ impl Calc {
         let mut smoothed: Vec<i64> = Vec::new();
 
         for i in points {
-            let k = f64::max(0.0, f64::min(1.0, (i as f64-min) / (max-min)));
-            let t = -((6.0*k) - (6.0*k*k) * 1000.0) as i64;
+            //let k = f64::max(0.0, f64::min(1.0, (i as f64-min) / (max-min)));
+            //let t = (((6.0*k) - (6.0*k*k)).powi(8) * 1000.0) as i64;
 
-            smoothed.push(t);
+            //STEEPNESS MUST BE DIVISIBLE BY 2
+            let steepness = 8.0;
+            let scale = 1.0/max.powf(steepness-1.0);
+            let mid_point = max/2.0; 
+
+            let t = ((scale * (i as f64-mid_point).powf(steepness)) + max) * 1000.0;
+
+            smoothed.push(t as i64);
         }
 
         return smoothed
     }
 
     pub fn normalize(min: i64, max: i64, start: i64, end: i64, input: i64) -> i64 {
-        return (end-start)*((input-min)/(max-min))+start
+        //this is the worst thing I have ever written this language fucking sucks
+        return ((end as f64-start as f64)*((input as f64-min as f64)/(max as f64-min as f64))+start as f64) as i64
     }
 
     pub fn normalize_vec(start: i64, end: i64, input: Vec<i64>) -> Option<Vec<i64>> {
         if input.len() == 0 { return None }
         let mut new = input.clone();
 
-        let min = input[0];
-        let max = input[input.len() / 2] + 1; 
+        let min = input.iter().min().unwrap();
+        let max = input.iter().max().unwrap(); 
 
         for i in 0..input.len() {
             //gay ass dereference here
-            new[i] = Calc::normalize(min, max, start, end, input[i]); //TEMP CHANGED THIS TO PUT END AS START AND START AS END, FIX THE LATER
+            new[i] = Calc::normalize(*min, *max, start, end, input[i]); //TEMP CHANGED THIS TO PUT END AS START AND START AS END, FIX THE LATER
         }
 
         return Some(new);
+    }
+
+    pub fn test_temp() {
+        let steps = 1000;
+        let mut counter = 1;
+        let mut times: Vec<i64> = Vec::new();
+
+        (0..i32::abs(steps)).for_each(|_| { times.push(counter); counter += 1});
+
+        let smoothed = Calc::smooth(times);
+        let mut file = std::fs::File::create("temp").unwrap();
+
+        let start = 1500;
+        let end = 4000;
+            
+        let normalized = Calc::normalize_vec(start, end, smoothed.clone()).unwrap();
+
+        for item in normalized {
+            file.write_all(format!("{} ", item).as_bytes()).unwrap();
+        }
     }
 }

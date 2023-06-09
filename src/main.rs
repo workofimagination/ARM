@@ -5,8 +5,9 @@ mod app;
 mod stepper;
 
 fn main() {
-    let mut main = app::App::new();
+    //let mut main = app::App::new();
 
-    main.start();
+    //main.start();
 
+    calc::Calc::test_temp();
 }
