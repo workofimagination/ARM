@@ -28,8 +28,8 @@ impl App {
     }
 
     pub fn add_current_position(&mut self) {
-        let beam_angle = self.driver.get_beam_angle();
-        let column_angle = self.driver.get_column_angle();
+        let beam_angle = self.driver.beam_angle;
+        let column_angle = self.driver.column_angle;
 
         let current_position = AngleSet {beam_angle, column_angle, rotation_angle: 0.0 };
 
@@ -133,8 +133,8 @@ impl App {
 
 
     pub fn get_current_position(&mut self) -> AngleSet {
-        let beam_angle = self.driver.get_beam_angle();
-        let column_angle = self.driver.get_column_angle();
+        let beam_angle = self.driver.beam_angle;
+        let column_angle = self.driver.column_angle;
 
         return AngleSet {beam_angle, column_angle, rotation_angle: 0.0 };
     }

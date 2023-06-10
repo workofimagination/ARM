@@ -44,7 +44,7 @@ impl Driver {
         let column_angle = 0.0;
         let beam_angle = 0.0;
         let base_angle = 0.0;
-        let step_degree = 1.0/28.0;
+        let step_degree = 1.0/11.111111;
         let movement_amount = 0.05;
         let micro_delay_default = 2500;
         let micro_delay_min = 2500;
@@ -156,7 +156,8 @@ impl Driver {
     }
 
     pub fn goto_point_3d(&mut self, x: f32, y: f32, z: f32) -> Result<(), DriverError> {
-        if Calc::dist_3d(&self.current_position, &Point { x, y, z }) > self.calc.radius*2.0 { return Err(DriverError::UnReachable) }
+        if Calc::dist_3d(&self.current_position, &Point { x, y, z }) > self.calc.radius*2.0 
+                { return Err(DriverError::UnReachable) }
 
         let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
@@ -306,14 +307,6 @@ impl Driver {
         return Point { x: beam.x, y: beam.y, z: 0.0 }
     } 
 
-    pub fn get_beam_angle(&self) -> f32 {
-        return self.beam_angle  
-    }
-
-    pub fn get_column_angle(&self) -> f32 {
-        return self.column_angle 
-    }
-
     fn get_linear_steps(steps: i32) -> Vec<i64> {
         let mut counter = 1;
         let mut times: Vec<i64> = Vec::new();
@@ -325,7 +318,7 @@ impl Driver {
 
     pub fn get_current_position(&self) -> Point {
         let pos = self.get_column_position();
-        let beam_angle = self.get_beam_angle();
+        let beam_angle = self.beam_angle;
         let center = Point { x: pos.x as f32, y: pos.y as f32, z: 0.0 };
 
         let current_position = Calc::get_point_2d(Calc::to_radian(beam_angle), &center);
