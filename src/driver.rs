@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread::{self, JoinHandle};
 use rand::Rng;
-use crate::stepper::Stepper as Stepper;
+use crate::stepper::TestStepper as Stepper;
 use crate::calc::Calc;
 use crate::utils::{ Point, AngleSet };
 
