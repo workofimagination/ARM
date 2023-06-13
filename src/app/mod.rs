@@ -29,6 +29,7 @@ pub enum Mode {
     Buffer
 }
 
+
 #[derive(Clone)]
 pub struct AngleSet {
     column_angle: f32,
