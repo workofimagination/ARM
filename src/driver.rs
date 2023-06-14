@@ -112,34 +112,17 @@ impl Driver {
 
         let angles = self.calc.get_angles(x, y);
 
-        let (beam_steps, column_steps, column_snapped, beam_snapped) = self.get_steps_2d(angles.column_angle, angles.beam_angle);
+        let column_snapped = Calc::snap(Calc::to_degree(angles.column_angle), self.column_motor.lock().unwrap().step_degree);
+        let beam_snapped = Calc::snap(Calc::to_degree(angles.beam_angle), self.beam_motor.lock().unwrap().step_degree);
 
-        let column_dir = if i32::signum(column_steps) == -1 { false } else { true };
-        let beam_dir = if i32::signum(beam_steps) == -1 { false } else { true };
+        let change_in_column = column_snapped - self.column_angle;
+        let change_in_beam = beam_snapped - self.beam_angle - change_in_column;
 
-        let column_linear = Driver::get_linear_steps(column_steps);
-        let beam_linear = Driver::get_linear_steps(beam_steps);
+        let column_thread = Driver::move_motor_smooth(&mut self.column_motor, change_in_column, self.micro_delay_min, self.micro_delay_max);
+        thread_pool.push(column_thread);
 
-        let column_smoothed = Calc::smooth(column_linear);
-        let beam_smoothed = Calc::smooth(beam_linear);
-
-        match Calc::normalize_vec(self.micro_delay_min, self.micro_delay_max, column_smoothed) {
-            Some(x) => {
-                let thread = Driver::move_motor_smooth(&mut self.column_motor, x, column_dir);
-                thread_pool.push(thread);
-            },
-
-            None => { return Err(DriverError::CantNormalize) }
-        };
-
-        match Calc::normalize_vec(self.micro_delay_min, self.micro_delay_max, beam_smoothed) {
-            Some(x) => {
-                let thread = Driver::move_motor_smooth(&mut self.beam_motor, x, beam_dir);
-                thread_pool.push(thread);
-            },
-
-            None => { return Err(DriverError::CantNormalize) }
-        };
+        let beam_thread = Driver::move_motor_smooth(&mut self.beam_motor, change_in_beam, self.micro_delay_min, self.micro_delay_max);
+        thread_pool.push(beam_thread);
 
         for thread in thread_pool {
             thread.join().unwrap();
@@ -153,52 +136,6 @@ impl Driver {
         self.current_position.x = cur_pos.x;
         self.current_position.y = cur_pos.y;
 
-
-        Ok(())
-    }
-
-    pub fn goto_point_3d(&mut self, x: f32, y: f32, z: f32) -> Result<(), DriverError> {
-        if Calc::dist_3d(&self.current_position, &Point { x, y, z }) > self.calc.radius*2.0 
-                { return Err(DriverError::UnReachable) }
-
-        let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
-
-        let angles = self.calc.get_angles_3d(x, y ,z);
-        let (column_steps, beam_steps, base_steps,
-                column_snapped, beam_snapped, base_snapped) = self.get_steps_3d(angles.column_angle, 
-                                                                                angles.beam_angle, angles.base_angle);
-        let column_snapped = Calc::snap(Calc::to_degree(angles.column_angle), self.step_degree);
-        let beam_snapped = Calc::snap(Calc::to_degree(angles.beam_angle), self.step_degree);
-        let base_snapped = Calc::snap(Calc::to_degree(angles.base_angle), self.step_degree);
-
-        let change_in_column = column_snapped - self.column_angle;
-        let change_in_beam = beam_snapped - self.beam_angle - change_in_column;
-        let change_in_base = base_snapped - self.base_angle;
-
-
-        let column_thread = Driver::move_motor(&mut self.column_motor, column_snapped, self.micro_delay_default);
-        thread_pool.push(column_thread);
-            
-        let beam_thread = Driver::move_motor(&mut self.beam_motor, beam_snapped, self.micro_delay_default);
-        thread_pool.push(beam_thread);
-
-        let base_thread = Driver::move_motor(&mut self.base_motor, base_snapped, self.micro_delay_default);
-        thread_pool.push(base_thread);
-
-        for thread in thread_pool {
-            match thread.join() {
-                Ok(()) => (),
-                Err(e) => { println!("{:?}", e); }
-            }
-        }
-
-        self.column_angle = column_snapped;
-        self.beam_angle = beam_snapped;
-        self.base_angle = base_snapped;
-
-        self.current_position.x = x;
-        self.current_position.y = y;
-        self.current_position.z = z;
 
         Ok(())
     }
@@ -226,7 +163,7 @@ impl Driver {
     pub fn move_motor(motor: &mut Arc<Mutex<Motor>>, degrees: f32, delay: i64) -> JoinHandle<()> {
         let motor = Arc::clone(motor);
 
-        thread::spawn( move || {
+        return thread::spawn( move || {
             let mut motor = motor.lock().unwrap();
             motor.move_degree(degrees, delay);
         })
@@ -235,19 +172,19 @@ impl Driver {
     pub fn move_motor_steps(motor: &mut Arc<Mutex<Motor>>, steps: i32, delay: i64) -> JoinHandle<()> {
         let motor = Arc::clone(motor);
 
-        thread::spawn( move || {
+        return thread::spawn( move || {
             let mut motor = motor.lock().unwrap();
             motor.move_steps(steps, delay);
         })
     }
 
-    pub fn move_motor_smooth(motor: &mut Arc<Mutex<Motor>>, delays: Vec<i64>, dir: bool) -> JoinHandle<()> {
+    pub fn move_motor_smooth(motor: &mut Arc<Mutex<Motor>>, degrees: f32, min_delay: i64, max_delay: i64) -> JoinHandle<()> {
         let motor = Arc::clone(motor);
 
-        thread::spawn(move || {
+        return thread::spawn(move || {
             let mut motor = motor.lock().unwrap();
 
-            motor.move_smooth(delays, dir);
+            motor.move_smooth(degrees, min_delay, max_delay);
         })
     }
 
@@ -264,36 +201,6 @@ impl Driver {
 
     }
 
-    pub fn get_steps_2d(&self, column_angle: f32, beam_angle: f32) -> (i32, i32, f32, f32) { //this
-        //return type is retarded. too bad
-        let column_snapped = Calc::snap(Calc::to_degree(column_angle), self.step_degree);
-        let beam_snapped = Calc::snap(Calc::to_degree(beam_angle), self.step_degree);
-
-        let change_in_column = column_snapped - self.column_angle;
-        let change_in_beam = beam_snapped - self.beam_angle - change_in_column;
-
-        let column_steps = (change_in_column/self.step_degree) as i32;
-        let beam_steps = (change_in_beam/self.step_degree) as i32;
-
-        return (beam_steps, column_steps, column_snapped, beam_snapped)
-    }
-
-    //this is also retarded
-    pub fn get_steps_3d(&self, column_angle: f32, beam_angle: f32, base_angle: f32) -> (i32, i32, i32, f32, f32, f32) {
-        let (column_steps, beam_steps, column_snapped, beam_snapped) = self.get_steps_2d(column_angle, beam_angle);
-
-        let base_snapped = Calc::snap(Calc::to_degree(base_angle), self.step_degree);
-        
-        let change_in_base = base_snapped - self.base_angle; 
-
-        let base_steps = (change_in_base/self.step_degree) as i32;
-
-        return (
-                column_steps, beam_steps, base_steps,
-                column_snapped, beam_snapped, change_in_base
-        )
-    }
-
     pub fn get_column_position(&self) -> Point {
         let column = Calc::get_point_2d(Calc::to_radian(self.column_angle), &self.calc.origin);
 
@@ -308,7 +215,7 @@ impl Driver {
         return Point { x: beam.x, y: beam.y, z: 0.0 }
     } 
 
-    fn get_linear_steps(steps: i32) -> Vec<i64> {
+    pub fn get_linear_steps(steps: i32) -> Vec<i64> {
         let mut counter = 1;
         let mut times: Vec<i64> = Vec::new();
 
