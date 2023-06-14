@@ -4,12 +4,13 @@ use std::thread::{self, JoinHandle};
 use rand::Rng;
 use crate::stepper::TestStepper as Stepper;
 use crate::calc::Calc;
+use crate::motor::Motor;
 use crate::utils::{ Point, AngleSet };
 
 pub struct Driver {
-    pub column_motor: Arc<Mutex<Stepper>>,
-    pub beam_motor: Arc<Mutex<Stepper>>,
-    pub base_motor: Arc<Mutex<Stepper>>,
+    pub column_motor: Arc<Mutex<Motor>>,
+    pub beam_motor: Arc<Mutex<Motor>>,
+    pub base_motor: Arc<Mutex<Motor>>,
     pub column_angle: f32,
     pub beam_angle: f32,
     pub base_angle: f32,
@@ -38,13 +39,13 @@ pub enum Direction {
 
 impl Driver {
     pub fn new() -> Driver {
-        let column_motor = Arc::new(Mutex::new(Stepper::new(20, 21)));
-        let beam_motor = Arc::new(Mutex::new(Stepper::new(7, 8)));
-        let base_motor = Arc::new(Mutex::new(Stepper::new(5, 6)));
+        let step_degree = 1.0/11.111111;
+        let column_motor = Arc::new(Mutex::new(Motor::new(step_degree, 20, 21)));
+        let beam_motor = Arc::new(Mutex::new(Motor::new(step_degree, 7, 8)));
+        let base_motor = Arc::new(Mutex::new(Motor::new(step_degree, 5, 6)));
         let column_angle = 0.0;
         let beam_angle = 0.0;
         let base_angle = 0.0;
-        let step_degree = 1.0/11.111111;
         let movement_amount = 0.05;
         let micro_delay_default = 2500;
         let micro_delay_min = 2500;
@@ -74,15 +75,16 @@ impl Driver {
 
         let angles = self.calc.get_angles(x, y);
 
-        let (beam_steps, column_steps, column_snapped, beam_snapped) = self.get_steps_2d(angles.column_angle, angles.beam_angle);
+        let column_snapped = Calc::snap(Calc::to_degree(angles.column_angle), self.step_degree);
+        let beam_snapped = Calc::snap(Calc::to_degree(angles.beam_angle), self.step_degree);
 
-        let column_dir = if i32::signum(column_steps) == -1 { false } else { true };
-        let beam_dir = if i32::signum(beam_steps) == -1 { false } else { true };
+        let change_in_column = column_snapped - self.column_angle;
+        let change_in_beam = beam_snapped - self.beam_angle - change_in_column;
 
-        let column_thread = Driver::move_motor(&mut self.column_motor, column_steps, column_dir, self.micro_delay_default);
+        let column_thread = Driver::move_motor(&mut self.column_motor, change_in_column, self.micro_delay_default);
         thread_pool.push(column_thread);
             
-        let beam_thread = Driver::move_motor(&mut self.beam_motor, beam_steps, beam_dir, self.micro_delay_default);
+        let beam_thread = Driver::move_motor(&mut self.beam_motor, change_in_beam, self.micro_delay_default);
         thread_pool.push(beam_thread);
 
         for thread in thread_pool {
@@ -165,18 +167,22 @@ impl Driver {
         let (column_steps, beam_steps, base_steps,
                 column_snapped, beam_snapped, base_snapped) = self.get_steps_3d(angles.column_angle, 
                                                                                 angles.beam_angle, angles.base_angle);
+        let column_snapped = Calc::snap(Calc::to_degree(angles.column_angle), self.step_degree);
+        let beam_snapped = Calc::snap(Calc::to_degree(angles.beam_angle), self.step_degree);
+        let base_snapped = Calc::snap(Calc::to_degree(angles.base_angle), self.step_degree);
 
-        let column_dir = if i32::signum(beam_steps) == -1 { false } else { true };
-        let beam_dir = if i32::signum(column_steps) == -1 { false } else { true };
-        let base_dir = if i32::signum(base_steps) == -1 { false } else { true };
+        let change_in_column = column_snapped - self.column_angle;
+        let change_in_beam = beam_snapped - self.beam_angle - change_in_column;
+        let change_in_base = base_snapped - self.base_angle;
 
-        let column_thread = Driver::move_motor(&mut self.column_motor, column_steps, column_dir, self.micro_delay_default);
+
+        let column_thread = Driver::move_motor(&mut self.column_motor, column_snapped, self.micro_delay_default);
         thread_pool.push(column_thread);
             
-        let beam_thread = Driver::move_motor(&mut self.beam_motor, beam_steps, beam_dir, self.micro_delay_default);
+        let beam_thread = Driver::move_motor(&mut self.beam_motor, beam_snapped, self.micro_delay_default);
         thread_pool.push(beam_thread);
 
-        let base_thread = Driver::move_motor(&mut self.base_motor, base_steps, base_dir, self.micro_delay_default);
+        let base_thread = Driver::move_motor(&mut self.base_motor, base_snapped, self.micro_delay_default);
         thread_pool.push(base_thread);
 
         for thread in thread_pool {
@@ -217,50 +223,45 @@ impl Driver {
         } 
     }
 
-    pub fn move_motor(motor: &mut Arc<Mutex<Stepper>>, steps: i32, dir: bool, delay: i64) -> JoinHandle<()> {
+    pub fn move_motor(motor: &mut Arc<Mutex<Motor>>, degrees: f32, delay: i64) -> JoinHandle<()> {
         let motor = Arc::clone(motor);
 
         thread::spawn( move || {
             let mut motor = motor.lock().unwrap();
-            let delay = Duration::from_micros(delay as u64);
-
-            for _ in 0..i32::abs(steps) {
-                motor.step(!dir);
-                thread::sleep(delay);
-                motor.reset();
-                thread::sleep(Duration::from_micros(10));
-            }
+            motor.move_degree(degrees, delay);
         })
     }
 
-    pub fn move_motor_smooth(motor: &mut Arc<Mutex<Stepper>>, delays: Vec<i64>, dir: bool) -> JoinHandle<()> {
+    pub fn move_motor_steps(motor: &mut Arc<Mutex<Motor>>, steps: i32, delay: i64) -> JoinHandle<()> {
+        let motor = Arc::clone(motor);
+
+        thread::spawn( move || {
+            let mut motor = motor.lock().unwrap();
+            motor.move_steps(steps, delay);
+        })
+    }
+
+    pub fn move_motor_smooth(motor: &mut Arc<Mutex<Motor>>, delays: Vec<i64>, dir: bool) -> JoinHandle<()> {
         let motor = Arc::clone(motor);
 
         thread::spawn(move || {
             let mut motor = motor.lock().unwrap();
 
-            for delay in delays {
-                motor.step(!dir);
-                thread::sleep(Duration::from_micros(delay as u64));
-                motor.reset();
-                thread::sleep(Duration::from_micros(10));
-            }
+            motor.move_smooth(delays, dir);
         })
     }
 
-    //FOR PUBLIC INTERFACE
     pub fn move_beam(&mut self, steps: i32) {
         let delay = self.micro_delay_default;
-        let dir = if i32::signum(steps) == -1 { false } else { true };
 
-        Driver::move_motor(&mut self.beam_motor, steps, dir, delay).join().unwrap();
+        Driver::move_motor_steps(&mut self.beam_motor, steps, delay).join().unwrap();
     }
 
     pub fn move_column(&mut self, steps: i32) {
         let delay = self.micro_delay_default;
-        let dir = if i32::signum(steps) == -1 { false } else { true };
 
-        Driver::move_motor(&mut self.column_motor, steps, dir, delay).join().unwrap();
+        Driver::move_motor_steps(&mut self.column_motor, steps, delay).join().unwrap();
+
     }
 
     pub fn get_steps_2d(&self, column_angle: f32, beam_angle: f32) -> (i32, i32, f32, f32) { //this
